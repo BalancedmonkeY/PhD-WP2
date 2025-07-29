@@ -1,0 +1,133 @@
+---
+title: "Interpretation Tool"
+format: docx
+editor: visual
+---
+
+This document is to go over the details of the interpretation tool part of the update framework, which is based on the work by Langan et. al.
+
+# Derivation of contours
+
+This section will go over the derivation of forming the contours of the plot for different situations.
+
+## Fixed-effects
+
+We are working within the fixed-effects framework initially, where the between-study heterogeneity, denoted by $\tau^2$, is equal to zero.
+
+### Statistical significance
+
+Lets assume we are interested in changing the statistical significance (i.e., the p-value).
+
+#### One new study
+
+Let's start with assuming that there is only one new study that will be added to the meta-analysis.
+
+The 95% confidence interval (CI) is denoted by
+
+$$\hat{\theta} \pm \Phi^{-1} (\frac{\alpha}{2}) \sqrt{var(\hat\theta)}$$ {#eq-ci}
+
+where $\hat\theta$ is the pooled effect estimate, $\alpha$ is the type I error rate (normally set at 0.5), $\Phi^{-1}$ is the inverse cumulative normal distribution with mean 0 and variance 1 (which ensures that $\Phi^{-1}(\alpha/2)$ maps an $\alpha$ value of 0.05 to the value of 1.96). $var(\hat\theta)$ is the variance of the pooled effect estimate.
+
+To create a threshold for statistical significance (specified by $\alpha$), we can specify that the lower or upper bound of the 95% CI needs to touch the null value, denoted by $\theta_0$.
+
+Let's assume that there is a new study with (unknown) effect estimate $\hat\theta_{new}$ , variance $var(\hat\theta_{new})$, and weight $w_{new}$. Then once this new study is added to the meta-analysis, the updated results will be as follows:
+
+$$
+\hat\theta = \frac{\sum^{n}_{i=1}{w_i\hat\theta_i} + w_{new}\hat\theta_{new}}{\sum^n_{i=1}{w_i} + w_{new}}
+$$ {#eq-updated-estimate}
+
+$$var(\hat\theta) = \frac{1}{\sum^n_{i=1}{w_i} + w_{new}}$$ {#eq-updated-variance}
+
+where $n$ is the number of studies in the original meta-analysis.
+
+By substituting @eq-updated-estimate and @eq-updated-variance into @eq-ci, and specifying that the upper or lower bound equals $\theta_0$, we can get an expression for $\theta_{new}$ in terms of other quantities:
+
+$$
+\hat\theta_{new} = \frac{1}{w_{new}}\{\theta_0[\sum^n_{i=1}{w_i} + w_{new}] - \sum^n_{i=1}{w_i \hat\theta_i} \pm \Phi^{-1}(\frac{\alpha}{2}) \sqrt{\sum^n_{i=1}{w_i} + w_{new}}\}
+$$ {#eq-rearranged-theta-new}
+
+In a fixed-effects meta-analysis, each weight is simply calculated as
+
+$$
+w_i = \frac{1}{var(\hat\theta_i)}
+$$ {#eq-fixed-weight}
+
+Therefore, by substituting @eq-fixed-weight into @eq-rearranged-theta-new, we then get an equation for the contour threshold on the estimate-variance plane.
+
+#### Two new studies
+
+When expanding from one new study to two new studies, @eq-updated-estimate and @eq-updated-variance become
+
+$$
+\hat\theta = \frac{\sum^{n}_{i=1}{w_i\hat\theta_i} + w_{n1}\hat\theta_{n1} + w_{n2}\hat\theta_{n2}}{\sum^n_{i=1}{w_i} + w_{n1} + w_{n2}}
+$$ {#eq-meta-theta-2studies}
+
+$$var(\hat\theta) = \frac{1}{\sum^n_{i=1}{w_i} + w_{n1} + w_{n2}}$$ {#eq-meta-variance-2studies}
+
+where $\hat\theta_{nj}$ and $w_{nj}$ are the estimates and weights of new studies respectively, where $j = 1,2$.
+
+Let
+
+$$w_{new} = w_{n1} + w_{n2}$$ {#eq-weight-2studies}
+
+$$\hat\theta_{new} = \frac{w_{n1}\hat\theta_{n1} + w_{n2}\hat\theta_{n2}}{w_{n1} + w_{n2}}$$ {#eq-theta-2studies} Substituting @eq-weight-2studies and @eq-theta-2studies into @eq-meta-theta-2studies and @eq-meta-variance-2studies brings us back to equations @eq-updated-estimate and @eq-updated-variance. Therefore, everything else follows through as before, but with new definitions for $w_{new}$ and $\hat\theta_{new}$.
+
+#### Multiple new studies
+
+Where we are calculating the contour to $m$ new studies, the equations follow as if it was one new study, but $w_{new}$ and $\hat\theta_{new}$ are defined as
+
+$$
+w_{new} = \sum^m_{j=1}{w_{nj}}
+$$
+
+$$
+\hat\theta_{new} = \frac{\sum^m_{j=1}{w_{nj}\hat\theta_{nj}}}{\sum^m_{j=1}{w_{nj}}}
+$$
+
+where $\hat\theta_{nj}$ and $w_{nj}$ are the estimates and weights of the new studies respectively, for $j = 1,2,...,m$.
+
+### Specific confidence interval bounds
+
+Let's suppose that instead of wanting a statistically significant pooled estimate, that the researchers are looking for the 95% CI bounds to be at a certain value (likely of clinical importance).
+
+With statistical significance, the contour equations are calculated from stating that the upper or lower bounds must touch the null value, $\theta_0$. In this scenario, the contour equations would be calculated from the following thresholds:
+
+$$
+\theta_{lower} = \hat{\theta} - \Phi^{-1} (\frac{\alpha}{2}) \sqrt{var(\hat\theta)}
+$$ {#eq-lower-bound}
+
+$$
+\theta_{upper} = \hat{\theta} + \Phi^{-1} (\frac{\alpha}{2}) \sqrt{var(\hat\theta)}
+$$ {#eq-upper-bound}
+
+where $\theta_{lower}$ and $\theta_{upper}$ are the user-defined lower and upper 95% CI bounds of interest.
+
+Substituting @eq-updated-estimate and @eq-updated-variance into @eq-lower-bound and @eq-upper-bound, and rearranging gives the following expression(s) for $\hat\theta_{new}$.
+
+$$
+\hat\theta_{new} = \frac{1}{w_{new}}\{\theta_{lower}[\sum^n_{i=1}{w_i} + w_{new}] - \sum^n_{i=1}{w_i \hat\theta_i} + \Phi^{-1}(\frac{\alpha}{2}) \sqrt{\sum^n_{i=1}{w_i} + w_{new}}\}
+$$ $$
+\hat\theta_{new} = \frac{1}{w_{new}}\{\theta_{upper}[\sum^n_{i=1}{w_i} + w_{new}] - \sum^n_{i=1}{w_i \hat\theta_i} - \Phi^{-1}(\frac{\alpha}{2}) \sqrt{\sum^n_{i=1}{w_i} + w_{new}}\}
+$$
+
+Whilst in the fixed-effects framework, the extensions to multiple new studies is the same here as for statistical significance.
+
+## Random-effects
+
+When working in the random-effects framework things get more complex as $\tau^2 \ne 0$ and is estimated from the studies in the meta-analysis, included the new studies.
+
+Let's start again with only considering one new study and aiming for a meta-analysis with statistical significance at the $\alpha = 0.05$ level.
+
+Under a random-effects framework, the weight for each study is instead calculated as
+
+$$
+w_i = \frac{1}{var(\hat\theta_i) + \tau^2}
+$$ {#eq-random-weight}
+
+Unfortunately, $\tau^2$, the between-study heterogeneity which is calculated from all studies, is too complicated to estimate by hand, and so researchers often use established estimators instead, such as the DerSimonian-Laird estimator or Restricted Maximum Likelihood.
+
+As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, the standard error-estimate plane is broken down into 'pixels', where $\tau^2$ can be estimated at each pixel. For each pixel, the estimated $\tau^2$ value is then plugged into the contour equations derived above, but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed.
+
+In Langan et. al. the authors have to make the assumption that $\tau^2$ is the same in the current meta-analysis as the updated one. Therefore, they use the 'current' $\tau^2$ in calculating the weights for each study. In our scenario where we are seeing if the new studies make a difference, we don't need to make this assumption. Therefore, we can use the estimated $\tau^2$ from the updated meta-analysis (the analysis that would happen if we were to include the new studies).
+
+The extensions for multiple new studies and clinical bounds then follow through.
