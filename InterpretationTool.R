@@ -156,11 +156,18 @@ InterpretationThreshold <- function(
   # Intelligent x-axis default limits #
   #-----------------------------------#
   
+  # log if user specified and outcome is a ratio
+  if (!is.null(xlim) & outcome %in% c('OR', 'RR')) {
+    xlim <- log(xlim)
+  }
+  
+  # Default limits
   SSdiff <- max(c(SS, SSnew)) - min(c(SS, SSnew))
   
   if (is.null(xlim)) {
     xlim <- c(min(c(SS, SSnew)) - 0.2 * SSdiff, max(c(SS, SSnew)) + 0.2 * SSdiff)
   }
+
   
   #-------------------------------------------------#
   # Vector of weights/sizes to define contours upon #
@@ -179,6 +186,13 @@ InterpretationThreshold <- function(
   #------------------------------#
   # Create significance contours #
   #------------------------------#
+   
+  # Transform user-specified thresholds if outcome is a ratio
+  if (outcome %in% c('OR', 'RR')) {
+   if (!is.na(zero)) {zero <- log(zero)}
+   else if (!is.na(lower)) {lower <- log(lower)}
+   else if (!is.na(upper)) {upper <- log(upper)}
+  }
   
   # fixed-effect model #
   if (method == "fixed")  {
@@ -245,15 +259,15 @@ InterpretationThreshold <- function(
   # Where focus is on a specific upper or lower confidence band
   } else if (is.na(zero) & !is.na(lower) & is.na(upper)) {
     if (new_lower > lower) {
-      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", lower)
+      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
     } else {
-      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", lower)
+      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
     }
   } else if (is.na(zero) & is.na(lower) & !is.na(upper)) {
     if (new_upper < upper) {
-      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", upper)
+      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
     } else {
-      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", upper)
+      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
     }
   } else {
     print ("(Only) one of zero, lower, or upper need to be given a value")
@@ -372,9 +386,9 @@ InterpretationThreshold <- function(
   } else if (!is.na(lower) | !is.na(upper)) {
     legendmat.fill.values <- c(legendmat.fill.values, "noclinsig_col" = "white", "clinsig_col" = "gray72")
     if (!is.na(lower)) {
-      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", lower, ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is higher than ", lower, ")"))
+      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower), ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower), ")"))
     } else {
-      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", upper, ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is lower than ", upper, ")"))
+      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper), ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper), ")"))
     }
   }
   
@@ -394,8 +408,14 @@ InterpretationThreshold <- function(
       scale_x_continuous(expand = c(0, 0)) +
       scale_y_reverse(expand = c(0, 0)) +
       coord_cartesian(xlim = xlim, ylim = ylim)
+    
+    # Exponential x axis ticks if outcome is a ratio (and no ticks given)
+    if (outcome %in% c('OR', 'RR') & is.null(expxticks)) {
+      plot <- plot +
+        scale_x_continuous(breaks = log(c(0.25, 0.5, 1, 2, 4)), labels = c(0.25, 0.5, 1, 2, 4), expand = c(0,0))
+    }
   
-    # Specify axis ticks if specified or exponential
+    # Specify axis ticks if specified
     # x axis ticks for exponential effects
     if (!is.null(expxticks)) {
       plot <- plot +
@@ -581,19 +601,19 @@ InterpretationThreshold <- function(
 # Study points, new points, both summary diamonds, and zero line
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', zero = 0)
+  method = 'fixed', outcome = 'RR', zero = 1)
 
 # Above but with different significance level
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', zero = 0, sig_level = 0.0025)
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.0025)
 
 # Threshold is now based on lower bound of confidence interval
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', lower = -0.25)
+  method = 'fixed', outcome = 'RR', lower = 1.1)
 
 # Threshold is now based on upper bound of confidence interval
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', upper = -0.1)
+  method = 'fixed', outcome = 'RR', upper = 0.9)
