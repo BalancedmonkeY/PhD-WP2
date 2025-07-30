@@ -17,8 +17,8 @@ raw_data_bin <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980"
                    R.1 = c(7, 39, 97, 8, 5, 12), N.1 = c(7+39, 39+115, 97+49, 8+166, 5+10, 12+117), T.1 = rep("Treatment", 6),
                    R.2 = c(10, 51, 94, 4, 8, 3), N.2 = c(10+12, 51+104, 94+48, 4+83, 8+10, 3+56), T.2 = rep("Control", 6))
 raw_data_new <- data.frame(StudyID = c(7), Study = c("Fake_1"),
-                           R.1 = c(9), N.1 = c(9+36), T.1 = rep("Treatment", 1),
-                           R.2 = c(11), N.2 = c(11+15), T.2 = rep("Control", 1))
+                           R.1 = c(63), N.1 = c(63+252), T.1 = rep("Treatment", 1),
+                           R.2 = c(77), N.2 = c(77+105), T.2 = rep("Control", 1))
 # raw_data_new <- data.frame(StudyID = c(7, 8, 9), Study = c("Fake_1", "Fake_2", "Fake_3"),
 #                            R.1 = c(9, 42, 90), N.1 = c(9+36, 42+105, 90+51), T.1 = rep("Treatment", 3),
 #                            R.2 = c(11, 48, 99), N.2 = c(11+15, 48+88, 99+62), T.2 = rep("Control", 3))
@@ -89,11 +89,11 @@ InterpretationThreshold <- function(
     zero = NA,
     lower = NA,
     upper = NA,
-    xlab = "Effect",
-    ylab = "Standard Error" ,
+    xlab = paste0 ("Effect (", outcome, ")"),
+    ylab = "Standard Error",
     plot_zero = TRUE,
-    plot_summ_current = FALSE,
-    plot_sum_updated = FALSE,
+    plot_summ_current = TRUE,
+    plot_summ_updated = TRUE,
     legendpos = NULL,
     summ_current = TRUE,
     summ_updated = TRUE,
@@ -113,11 +113,10 @@ InterpretationThreshold <- function(
   ci <- qnorm(1 - sig_level / 2)
   
   #Calculate current meta-analysis (using rma from {metafor})
-  current_meta <- metafor::rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "PM", "FE"), level = (1 - sig_level), measure = outcome)
-  current_tau2 <- current_meta$tau2
+  current_meta <- metafor::rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "PM", "EE"), level = (1 - sig_level), measure = outcome)
   
   #Calculate updated meta-analysis (using rma from {metafor})
-  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = ifelse(method == 'random', "PM", "FE"), level = (1 - sig_level), measure = outcome)
+  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = ifelse(method == 'random', "PM", "EE"), level = (1 - sig_level), measure = outcome)
   updated_tau2 <- updated_meta$tau2
   
   
@@ -127,7 +126,7 @@ InterpretationThreshold <- function(
   
   # Weights are calculated the same whether 'current' or 'new'
   if (method == "random") {
-    size_current <- 1 / ((seSS^2) + current_tau2)  # standard inverse-variance weighting
+    size_current <- 1 / ((seSS^2) + updated_tau2)  # standard inverse-variance weighting
     size_new <- 1 / ((seSSnew^2) + updated_tau2)
   } else {
     size_current <- 1 / (seSS^2)
@@ -218,6 +217,31 @@ InterpretationThreshold <- function(
     #  if (lc < zero & uc > zero) contour_tiles$code[i] <- "nosig_col"   # not sig
     #  if (lc > zero & uc > zero) contour_tiles$code[i] <- "sigmore_col"   # sig > 0
     #}
+  }
+   
+  #------------------------------#
+  # Assess whether threshold met #
+  #------------------------------#  
+   
+  # Acquire updated meta-analysis confidence intervals
+  new_pvalue <- updated_meta$pval 
+  new_lower <- updated_meta$ci.lb
+  new_upper <- updated_meta$ci.ub
+  
+  # Where focus is on statistical significance (where alpha = 0.05)
+  if (sig_level == 0.05 & !is.na(zero)) {
+    if (new_pvalue < 0.05) {
+      threshold_result <- "Addition of new studies will give a statistically significant (alpha = 0.05) pooled estimate"
+    } else {
+      threshold_result <- "Addition of new studies will not give a statistically significant (alpha = 0.05) pooled estimate"
+    }
+  # Where focus is on statistical significance (where alpha != 0.05)
+  } else if (sig_level != 0.05 & !is.na(zero)) {
+    if (new_upper < 0 | new_lower > 0) {
+      threshold_result <- paste0("Addition of new studies will give a statistically significant (alpha = ", sig_level, ") pooled estimate")
+    } else {
+      threshold_result <- paste0("Addition of new studies will not give a statistically significant (alpha = ", sig_level, ") pooled estimate")
+    }
   }
   
   #------------------#
@@ -319,12 +343,12 @@ InterpretationThreshold <- function(
   
   if (summ_current) {
     legendmat.fill.values <- c(legendmat.fill.values, "diamond_fill_current" = "lavenderblush4")
-    legendmat.fill.labels <- c(legendmat.fill.labels, "Current Pooled Result (diamond)")
+    legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Current Pooled Result (diamond - ", round((1-sig_level)*100, 1), "% CI)"))
   }
   
   if (summ_updated) {
     legendmat.fill.values <- c(legendmat.fill.values, "diamond_fill_updated" = "cornflowerblue")
-    legendmat.fill.labels <- c(legendmat.fill.labels, "Updated Pooled Result (diamond)")
+    legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Updated Pooled Result (diamond - ", round((1-sig_level)*100, 1), "% CI)"))
   }
   
   legendmat.fill.values <- c(legendmat.fill.values, "nosig_col" = "white", "sigless_col" = "gray91", "sigmore_col" = "gray72")
@@ -336,8 +360,6 @@ InterpretationThreshold <- function(
   #-------------------#
   # Put together plot #
   #-------------------#
-  
-  threshold_plot <- "'draw_plot' was not selected to be TRUE"  # message for when users want the plot but didn't select for it 
   
   if (draw_plot) {
   
@@ -489,6 +511,9 @@ InterpretationThreshold <- function(
   
     # return final plot
     threshold_plot <- plot
+    
+  } else {
+    threshold_plot <- "'draw_plot' was not selected to be TRUE"  # message for when users want the plot but didn't select for it
   }
   
   return(list(threshold_result = threshold_result,
@@ -502,36 +527,13 @@ InterpretationThreshold <- function(
 
 # Tests #
 
-# Study points & summary diamond  PASS
-#extfunnel(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, method = 'fixed', outcome = 'OR',
-#          ylim = c(0, 1), expxticks = c(0.25, 0.5, 1, 2, 4), xlab = "Odds Ratio", legend = TRUE)
+# Study points, new points, both summary diamonds, and zero line
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 0)
 
-# Study points & summary diamond with predictive interval  PASS
-#extfunnel(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, method = 'random', outcome = 'OR',
-#          ylim = c(0, 1), expxticks = c(0.25, 0.5, 1, 2, 4), xlab = "Odds Ratio", pred.interval = TRUE, legend = TRUE)
-
-# Study points & summary diamond & effect line PASS
-#extfunnel(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, method = 'fixed', outcome = 'OR',
-#          ylim = c(0, 1), expxticks = c(0.25, 0.5, 1, 2, 4), xlab = "Odds Ratio", plot.summ = TRUE, legend = TRUE)
-
-# Study points & summary diamond & significance contours  PASS
-#extfunnel(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, method = 'fixed', outcome = 'OR',
-#          ylim = c(0, 1), xlim = (log(c(0.1, 4))), expxticks = c(0.25, 0.5, 1, 2, 4), xlab = "Odds Ratio", contour = TRUE, legend = TRUE, legendpos = 'left')
-
-# Study points, summary diamond, significance contours & simulated trials  PASS
-#extfunnel(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, method = 'fixed', outcome = 'OR',
-#          ylim = c(0, 1), expxticks = c(0.25, 0.5, 1, 2, 4), xlab = "Odds Ratio", contour = TRUE, sim.points = sims_bin$sim_study, legend = TRUE)
-
-# Above but zoomed in on simulated studies  PASS
-#extfunnel(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, method = 'fixed', outcome = 'OR',
-#          ylim = c(0.05, 0.15), xlim = log(c(0.4, 2.1)), expxticks = c(0.25, 0.5, 1, 2, 4), xlab = "Odds Ratio",
-#          contour = TRUE, sim.points = sims_bin$sim_study, legend = TRUE)   # would be ideal to remove 'current studies' from legend if they are forced off from the plot
-
-# # Mirror figure 2C in Langan et al  FAIL -> yes but big old triangle of colour missing at the bottom (I think it's going to have to stay as a bug for now...its only when the 'curtain' moves across to the opposite side to standard...)
-# extfunnel(SS = MAdata_con$yi, seSS = MAdata_con$sei, method = 'fixed', outcome = 'MD',
-#           ylim = c(0, 5.5), xlab = "Difference in means", contour = TRUE, plot.summ = TRUE, legend = TRUE)
-#
-# # Finding error of continuous not showing predictive interval (FIXED)
-# extfunnel(SS = MAdata_con$yi, seSS = MAdata_con$sei, method = 'random', outcome = 'MD',
-#           ylim = c(0, 5.5), xlab = "Difference in means", contour = FALSE, plot.summ = TRUE, legend = TRUE, pred.interval = TRUE)
+# Above but with different significance level
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 0, sig_level = 0.0025)
 
