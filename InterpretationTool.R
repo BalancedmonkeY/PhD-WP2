@@ -56,7 +56,7 @@ MAdata_bin_new$sei <- sqrt(MAdata_bin_new$vi)
 #' @param upper value for which the user wants the upper CI bound to be as low as	
 #' @param xlab label for the x axis		
 #' @param ylab label for the y axis
-#' @param plot_zero TRUE/FALSE plot the null effect vertical line as defined by the argument 'zero'	
+#' @param plot_threshold TRUE/FALSE plot the threshold value vertical line as defined by the argument 'zero', 'lower', or 'upper'	
 #' @param plot_summ_current TRUE/FALSE plot the updated pooled effect vertical line of current studies
 #' @param plot_summ_updated TRUE/FALSE plot the updated pooled effect vertical line of current studies
 #' @param legendpos position of legend as per ggplot styling	
@@ -91,7 +91,7 @@ InterpretationThreshold <- function(
     upper = NA,
     xlab = paste0 ("Effect (", outcome, ")"),
     ylab = "Standard Error",
-    plot_zero = TRUE,
+    plot_threshold = TRUE,
     plot_summ_current = TRUE,
     plot_summ_updated = TRUE,
     legendpos = NULL,
@@ -229,19 +229,34 @@ InterpretationThreshold <- function(
   new_upper <- updated_meta$ci.ub
   
   # Where focus is on statistical significance (where alpha = 0.05)
-  if (sig_level == 0.05 & !is.na(zero)) {
+  if (sig_level == 0.05 & !is.na(zero) & is.na(lower) & is.na(upper)) {
     if (new_pvalue < 0.05) {
       threshold_result <- "Addition of new studies will give a statistically significant (alpha = 0.05) pooled estimate"
     } else {
       threshold_result <- "Addition of new studies will not give a statistically significant (alpha = 0.05) pooled estimate"
     }
   # Where focus is on statistical significance (where alpha != 0.05)
-  } else if (sig_level != 0.05 & !is.na(zero)) {
+  } else if (sig_level != 0.05 & !is.na(zero) & is.na(lower) & is.na(upper)) {
     if (new_upper < 0 | new_lower > 0) {
       threshold_result <- paste0("Addition of new studies will give a statistically significant (alpha = ", sig_level, ") pooled estimate")
     } else {
       threshold_result <- paste0("Addition of new studies will not give a statistically significant (alpha = ", sig_level, ") pooled estimate")
     }
+  # Where focus is on a specific upper or lower confidence band
+  } else if (is.na(zero) & !is.na(lower) & is.na(upper)) {
+    if (new_lower > lower) {
+      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", lower)
+    } else {
+      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", lower)
+    }
+  } else if (is.na(zero) & is.na(lower) & !is.na(upper)) {
+    if (new_upper < upper) {
+      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", upper)
+    } else {
+      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", upper)
+    }
+  } else {
+    print ("(Only) one of zero, lower, or upper need to be given a value")
   }
   
   #------------------#
@@ -334,9 +349,9 @@ InterpretationThreshold <- function(
     legendmat.col$color[5] <- "cadetblue4"
   }
   
-  if (plot_zero) {
-    legendmat.col.values <- c(legendmat.col.values, "zero_col" = "lightgrey")
-    legendmat.col$labels[6] <- "Null Effect"
+  if (plot_threshold) {
+    legendmat.col.values <- c(legendmat.col.values, "threshold_col" = "lightgrey")
+    legendmat.col$labels[6] <- "Threshold value"
     legendmat.col$linetype[6] <- "solid"
     legendmat.col$color[6] <- "lightgray"
   }
@@ -351,8 +366,17 @@ InterpretationThreshold <- function(
     legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Updated Pooled Result (diamond - ", round((1-sig_level)*100, 1), "% CI)"))
   }
   
-  legendmat.fill.values <- c(legendmat.fill.values, "nosig_col" = "white", "sigless_col" = "gray91", "sigmore_col" = "gray72")
-  legendmat.fill.labels <- c(legendmat.fill.labels, paste("Non Sig Effect (", sig_level*100, "% level)", sep = ""), paste("Sig Effect < NULL (", sig_level*100, "% level)", sep = ""), paste("Sig Effect > NULL (", sig_level*100, "% level)", sep = ""))
+  if (!is.na(zero)) {
+    legendmat.fill.values <- c(legendmat.fill.values, "nosig_col" = "white", "sigless_col" = "gray91", "sigmore_col" = "gray72")
+    legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", sig_level*100, "% level)"), paste0("Sig Effect < NULL (", sig_level*100, "% level)"), paste0("Sig Effect > NULL (", sig_level*100, "% level)"))
+  } else if (!is.na(lower) | !is.na(upper)) {
+    legendmat.fill.values <- c(legendmat.fill.values, "noclinsig_col" = "white", "clinsig_col" = "gray72")
+    if (!is.na(lower)) {
+      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", lower, ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is higher than ", lower, ")"))
+    } else {
+      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", upper, ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is lower than ", upper, ")"))
+    }
+  }
   
   # drop rows that are not included (based on inputs)
   legendmat.col <- legendmat.col[!is.na(legendmat.col$labels), ]
@@ -390,23 +414,49 @@ InterpretationThreshold <- function(
   
     # contours
   if (method == 'fixed') {
+    if (!is.na(zero)) {
+        plot <- plot +
+          geom_polygon(
+            data = data.frame(x = c(c1SS, rev(c2SS)), y = c(csize, rev(csize))),
+            aes(x = x, y = y, fill = "nosig_col"),
+            color = "white"
+          ) +
+          geom_polygon(
+            data = data.frame(x = c(c2SS, xlim[1], xlim[1]), y = c(csize, ylim[2], ylim[1])),
+            aes(x = x, y = y, fill = "sigless_col"),
+            color = "gray91"
+          ) +
+          geom_polygon(
+            data = data.frame(x = c(c1SS, xlim[2], xlim[2]), y = c(csize, ylim[2], ylim[1])),
+            aes(x = x, y = y, fill = "sigmore_col"),
+            color = "gray72"
+          )
+    } else if (!is.na(lower)) {
       plot <- plot +
         geom_polygon(
-          data = data.frame(x = c(c1SS, rev(c2SS)), y = c(csize, rev(csize))),
-          aes(x = x, y = y, fill = "nosig_col"),
+          data = data.frame(x = c(xlim[1], c1SS, xlim[2], xlim[1]), y = c(ylim[1], csize, ylim[2], ylim[2])),
+          aes(x = x, y = y, fill = "noclinsig_col"),
+          color = "white"
+        ) +
+        geom_polygon(
+          data = data.frame(x = c(c1SS, xlim[2], xlim[2]), y = c(csize, ylim[2], ylim[1])),
+          aes(x = x, y = y, fill = "clinsig_col"),
+          color = "gray72"
+        )
+    } else if (!is.na(upper)) {
+      plot <- plot +
+        geom_polygon(
+          data = data.frame(x = c(xlim[2], c2SS, xlim[1], xlim[2]), y = c(ylim[1], csize, ylim[2], ylim[2])),
+          aes(x = x, y = y, fill = "noclinsig_col"),
           color = "white"
         ) +
         geom_polygon(
           data = data.frame(x = c(c2SS, xlim[1], xlim[1]), y = c(csize, ylim[2], ylim[1])),
-          aes(x = x, y = y, fill = "sigless_col"),
-          color = "gray91"
-        ) +
-        geom_polygon(
-          data = data.frame(x = c(c1SS, xlim[2], xlim[2]), y = c(csize, ylim[2], ylim[1])),
-          aes(x = x, y = y, fill = "sigmore_col"),
+          aes(x = x, y = y, fill = "clinsig_col"),
           color = "gray72"
         )
     }
+  }
     if (method == 'random') {
       plot <- plot +
         geom_tile(data = contour_tiles, aes(x = cSS, y = csize, fill = code))  # haven't tested this yet or its affect on the legend
@@ -465,9 +515,9 @@ InterpretationThreshold <- function(
     }
   
     # Null vertical line
-    if (plot_zero) {
+    if (plot_threshold) {
       plot <- plot +
-        geom_vline(aes(xintercept = zero, color = "zero_col"))
+        geom_vline(aes(xintercept = ifelse(!is.na(zero), zero, ifelse(!is.na(lower), lower, upper)), color = "threshold_col"))
     }
   
     # Study points
@@ -498,7 +548,8 @@ InterpretationThreshold <- function(
       plot <- plot +
         scale_fill_manual(name = "",
                           values = legendmat.fill.values,
-                          labels = legendmat.fill.labels)
+                          labels = legendmat.fill.labels,
+                          breaks = names(legendmat.fill.values))
     }
     if (!legend) {
       plot <- plot +
@@ -537,3 +588,12 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
   method = 'fixed', outcome = 'RR', zero = 0, sig_level = 0.0025)
 
+# Threshold is now based on lower bound of confidence interval
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', lower = -0.25)
+
+# Threshold is now based on upper bound of confidence interval
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', upper = -0.1)
