@@ -114,7 +114,7 @@ Whilst in the fixed-effects framework, the extensions to multiple new studies is
 
 ## Random-effects
 
-When working in the random-effects framework things get more complex as $\tau^2 \ne 0$ and is estimated from the studies in the meta-analysis, included the new studies.
+When working in the random-effects framework things get more complex as $\tau^2 \ne 0$ and is estimated from the studies in the meta-analysis, including the new studies.
 
 Let's start again with only considering one new study and aiming for a meta-analysis with statistical significance at the $\alpha = 0.05$ level.
 
@@ -126,8 +126,24 @@ $$ {#eq-random-weight}
 
 Unfortunately, $\tau^2$, the between-study heterogeneity which is calculated from all studies, is too complicated to estimate by hand, and so researchers often use established estimators instead, such as the DerSimonian-Laird estimator or Restricted Maximum Likelihood.
 
-As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, the standard error-estimate plane is broken down into 'pixels', where $\tau^2$ can be estimated at each pixel. For each pixel, the estimated $\tau^2$ value is then plugged into the contour equations derived above, but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed.
+As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, as per Langan et. al., the standard error-estimate plane is broken down into 'pixels', where $\tau^2$ is estimated at each pixel (calculated from the original studies as well as the new study represented by the pixel). For each pixel, $\tau^2$ value, $\hat\theta_{new}$, and $var(\hat\theta_{new})$ are plugged into the meta-analysis equations ( @eq-updated-estimate and @eq-updated-variance), but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed (i.e. whether 95% CI was one side of null effect). The result at each pixel is coloured according to whether the threshold was met. This easily extends to the clinical bound thresholds as well as the statistical significance.
 
-In Langan et. al. the authors have to make the assumption that $\tau^2$ is the same in the current meta-analysis as the updated one. Therefore, they use the 'current' $\tau^2$ in calculating the weights for each study. In our scenario where we are seeing if the new studies make a difference, we don't need to make this assumption. Therefore, we can use the estimated $\tau^2$ from the updated meta-analysis (the analysis that would happen if we were to include the new studies).
+### Multiple new studies
 
-The extensions for multiple new studies and clinical bounds then follow through.
+Under the fixed-effects model, the weighted sum of the new studies became the point that visually represented whether the updated meta-analysis was in a certain zone (as created by the contours). This worked because the lack of between-study heterogeneity simplified the maths to weighted averages (see [Multiple new studies]).
+
+Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' of the new studies doesn't work, as we cannot know from what new studies created the 'average' represented by the pixel. Furthermore, there would be no way of estimating $\tau^2$ without estimates of the new studies represented by the 'average'. For a single pixel representing the new studies 'average', without the new studies data, there could be multiple values of $\tau^2$.
+
+**We have to assume a constant** $\tau^2$ **across all pixels in the plane.**
+
+The estimated between-study heterogeneity from the updated meta-analysis is proposed as the common $\tau^2$ across all pixels. Whilst this may be a strong assumption as you get to more 'extreme' pixels/values, the new studies 'average' would at least sit in the correct section of the plot (as per the fixed-effects).
+
+The new studies 'average' that would be plotted (in addition to all the new studies) would be calculated as
+
+$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2}}}$$
+$$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2}$$
+where $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
+
+Then for each pixel, the updated pooled effect estimate and associated 95% confidence interval is calculated using equations @eq-updated-estimate, @eq-updated-variance and @eq-random-weight, where $\tau^2$ is the value from the updated meta-analysis from adding known new studies. As per the scenario with one new study, each pixel is coloured according to whether the specified threshold was met.
+
+A potential extension, depending on time and resources, could be to estimate $\tau^2$ at each pixel by simulating $m$ new studies. This decision depends on the balance between computational resource and improving the approximation of $\tau^2$. In the current scenario, I feel that the assumption above is satisfactory - but this may change depending on how the plot's use is extended.
