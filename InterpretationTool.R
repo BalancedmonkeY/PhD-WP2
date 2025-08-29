@@ -19,6 +19,9 @@ raw_data_bin <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980"
 raw_data_new <- data.frame(StudyID = c(7), Study = c("Fake_1"),
                            R.1 = c(63), N.1 = c(63+252), T.1 = rep("Treatment", 1),
                            R.2 = c(77), N.2 = c(77+105), T.2 = rep("Control", 1))
+raw_data_new_multiple <- data.frame(StudyID = c(7, 8, 9), Study = c("Fake_1", "Fake_2", "Fake_3"),
+                           R.1 = c(63, 12, 45), N.1 = c(63+252, 12+34, 45+60), T.1 = rep("Treatment", 3),
+                           R.2 = c(77, 21, 58), N.2 = c(77+105, 21+25, 58+42), T.2 = rep("Control", 1))
 # raw_data_new <- data.frame(StudyID = c(7, 8, 9), Study = c("Fake_1", "Fake_2", "Fake_3"),
 #                            R.1 = c(9, 42, 90), N.1 = c(9+36, 42+105, 90+51), T.1 = rep("Treatment", 3),
 #                            R.2 = c(11, 48, 99), N.2 = c(11+15, 48+88, 99+62), T.2 = rep("Control", 3))
@@ -30,9 +33,11 @@ raw_data_new <- data.frame(StudyID = c(7), Study = c("Fake_1"),
 ### Obtain study effects and standard errors #
 MAdata_bin <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_bin)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
 MAdata_bin_new <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_new)
+MAdata_bin_new_multiple <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_new_multiple)
 # MAdata_con <- escalc(measure = "MD", m1i = Mean.1, m2i = Mean.2, sd1i = SD.1, sd2i = SD.2, n1i = N.1, n2i = N.2, data = raw_data_con)
 MAdata_bin$sei <- sqrt(MAdata_bin$vi)  # Calculate standard errors
 MAdata_bin_new$sei <- sqrt(MAdata_bin_new$vi)
+MAdata_bin_new_multiple$sei <- sqrt(MAdata_bin_new_multiple$vi)
 # MAdata_con$sei <- sqrt(MAdata_con$vi)
 
 
@@ -132,6 +137,16 @@ InterpretationThreshold <- function(
     size_current <- 1 / (seSS^2)
     size_new <- 1 / (seSSnew^2)
   }
+  
+  #-----------------------#
+  # New studies 'average' #
+  #-----------------------#
+  
+  if (method == "fixed") {
+    new_avg_est <- sum(size_new * SSnew) / sum(size_new)
+    new_avg_se <- sqrt(1 / sum(size_new))
+  }
+  
   
   #-----------------------------------#
   # Intelligent y-axis default limits #
@@ -245,29 +260,29 @@ InterpretationThreshold <- function(
   # Where focus is on statistical significance (where alpha = 0.05)
   if (sig_level == 0.05 & !is.na(zero) & is.na(lower) & is.na(upper)) {
     if (new_pvalue < 0.05) {
-      threshold_result <- "Addition of new studies will give a statistically significant (alpha = 0.05) pooled estimate"
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will give a statistically significant (alpha = 0.05) pooled estimate")
     } else {
-      threshold_result <- "Addition of new studies will not give a statistically significant (alpha = 0.05) pooled estimate"
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will not give a statistically significant (alpha = 0.05) pooled estimate")
     }
   # Where focus is on statistical significance (where alpha != 0.05)
   } else if (sig_level != 0.05 & !is.na(zero) & is.na(lower) & is.na(upper)) {
     if (new_upper < 0 | new_lower > 0) {
-      threshold_result <- paste0("Addition of new studies will give a statistically significant (alpha = ", sig_level, ") pooled estimate")
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will give a statistically significant (alpha = ", sig_level, ") pooled estimate")
     } else {
-      threshold_result <- paste0("Addition of new studies will not give a statistically significant (alpha = ", sig_level, ") pooled estimate")
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will not give a statistically significant (alpha = ", sig_level, ") pooled estimate")
     }
   # Where focus is on a specific upper or lower confidence band
   } else if (is.na(zero) & !is.na(lower) & is.na(upper)) {
     if (new_lower > lower) {
-      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
     } else {
-      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will not give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
     }
   } else if (is.na(zero) & is.na(lower) & !is.na(upper)) {
     if (new_upper < upper) {
-      threshold_result <- paste0("Addition of new studies will give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
     } else {
-      threshold_result <- paste0("Addition of new studies will not give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
+      threshold_result <- paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will not give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
     }
   } else {
     print ("(Only) one of zero, lower, or upper need to be given a value")
@@ -321,7 +336,7 @@ InterpretationThreshold <- function(
   
   # empty data frame ready for filling (one for each type of legend)
   legendmat.col.values <- NULL
-  legendmat.col <- data.frame(labels = rep(NA, 6), linetype = rep(NA, 6), shape = rep(NA, 6), color = rep(NA, 6), fill = rep(NA, 6))
+  legendmat.col <- data.frame(labels = rep(NA, 7), linetype = rep(NA, 7), shape = rep(NA, 7), color = rep(NA, 7), fill = rep(NA, 7))
   legendmat.fill.values <- NULL
   legendmat.fill.labels <- NULL
   
@@ -335,39 +350,48 @@ InterpretationThreshold <- function(
   
   if (new_points) {
     legendmat.col.values <- c(legendmat.col.values, "new_point_col" = "black")
-    legendmat.col$labels[2] <- "New studies"
+    legendmat.col$labels[2] <- ifelse(length(SSnew) > 1, "New studies", "New study")
     legendmat.col$linetype[2] <- "blank"
-    legendmat.col$shape[2] <- 23
+    legendmat.col$shape[2] <- 21
     legendmat.col$color[2] <- "black"
-    legendmat.col$fill[2] <- "blue"
+    legendmat.col$fill[2] <- "lightblue"
+  }
+  
+  if (new_points & length(SSnew) > 1) {
+    legendmat.col.values <- c(legendmat.col.values, "new_point_avg_col" = "black")
+    legendmat.col$labels[3] <- "New studies 'average'"
+    legendmat.col$linetype[3] <- "blank"
+    legendmat.col$shape[3] <- 23
+    legendmat.col$color[3] <- "black"
+    legendmat.col$fill[3] <- "lightblue"
   }
   
   if (pred_interval) {
     legendmat.col.values <- c(legendmat.col.values, "pred_col" = "black")
-    legendmat.col$labels[3] <- "95% Predictive Interval"
-    legendmat.col$linetype[3] <- "solid"
-    legendmat.col$color[3] <- "black"
+    legendmat.col$labels[4] <- "95% Predictive Interval"
+    legendmat.col$linetype[4] <- "solid"
+    legendmat.col$color[4] <- "black"
   }
   
   if (plot_summ_current) {
     legendmat.col.values <- c(legendmat.col.values, "summ_current_col" = "slategrey")
-    legendmat.col$labels[4] <- "Current Pooled Effect"
-    legendmat.col$linetype[4] <- "solid"
-    legendmat.col$color[4] <- "slategrey"
+    legendmat.col$labels[5] <- "Current Pooled Effect"
+    legendmat.col$linetype[5] <- "solid"
+    legendmat.col$color[5] <- "slategrey"
   }
   
   if (plot_summ_updated) {
     legendmat.col.values <- c(legendmat.col.values, "summ_updated_col" = "cadetblue4")
-    legendmat.col$labels[5] <- "Updated Pooled Effect"
-    legendmat.col$linetype[5] <- "solid"
-    legendmat.col$color[5] <- "cadetblue4"
+    legendmat.col$labels[6] <- "Updated Pooled Effect"
+    legendmat.col$linetype[6] <- "solid"
+    legendmat.col$color[6] <- "cadetblue4"
   }
   
   if (plot_threshold) {
     legendmat.col.values <- c(legendmat.col.values, "threshold_col" = "lightgrey")
-    legendmat.col$labels[6] <- "Threshold value"
-    legendmat.col$linetype[6] <- "solid"
-    legendmat.col$color[6] <- "lightgray"
+    legendmat.col$labels[7] <- "Threshold value"
+    legendmat.col$linetype[7] <- "solid"
+    legendmat.col$color[7] <- "lightgray"
   }
   
   if (summ_current) {
@@ -550,7 +574,14 @@ InterpretationThreshold <- function(
       plot <- plot +
         geom_point(data = data.frame(x = SSnew, y = seSSnew), 
                    aes(x = x, y = y, color = "new_point_col"), 
-                   shape = 23, fill = "blue")
+                   shape = 21, fill = "lightblue")
+    }
+    
+    if (new_points & length(SSnew) > 1) {
+      plot <- plot +
+        geom_point(data = data.frame(x = new_avg_est, y = new_avg_se),
+          aes(x = x, y = y, color = "new_point_avg_col"), 
+          shape = 23, fill = "lightblue", size = 3)
     }
   
     # Add legend
@@ -617,3 +648,8 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
   method = 'fixed', outcome = 'RR', upper = 0.9)
+
+# Multiple new studies
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.0005)
