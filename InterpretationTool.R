@@ -10,6 +10,8 @@
 
 library(ggplot2)
 library(metafor)
+library(progressr)
+library(rmeta)
 
 
 ### Test Data antibiotics vs. control for the common cold to alleviate symptoms by 7 days ###
@@ -109,6 +111,8 @@ InterpretationThreshold <- function(
     rand_load = 100
 ) {
   
+  progressr::handlers(global = TRUE)
+  
   
   #----------------------------------------#
   # Calculate initial arguments/parameters #
@@ -125,9 +129,9 @@ InterpretationThreshold <- function(
   updated_tau2 <- updated_meta$tau2
   
   
-  #-------------------------------#
-  # CURRENT WEIGHTINGS of studies #
-  #-------------------------------#
+  #---------------------------#
+  # NEW WEIGHTINGS of studies #
+  #---------------------------#
   
   # Weights are calculated the same whether 'current' or 'new'
   if (method == "random") {
@@ -138,15 +142,10 @@ InterpretationThreshold <- function(
     size_new <- 1 / (seSSnew^2)
   }
   
-  #-----------------------#
-  # New studies 'average' #
-  #-----------------------#
-  
-  if (method == "fixed") {
-    new_avg_est <- sum(size_new * SSnew) / sum(size_new)
-    new_avg_se <- sqrt(1 / sum(size_new))
-  }
-  
+  # New studies 'average' (only when multiple)
+  new_avg_est <- sum(size_new * SSnew) / sum(size_new)
+  new_avg_se <- sqrt(1 / sum(size_new))
+
   
   #-----------------------------------#
   # Intelligent y-axis default limits #
@@ -223,29 +222,44 @@ InterpretationThreshold <- function(
   }
     
   # random-effects model #
-  if (method == "random")  {     # code had been developed from Langan et al & Florian Teichert
-    print("A less computationally expensive method is required.")
-    # tibble of every point on plot (i.e. every possible combo)
-    #contour_tiles <- expand_grid(cSS = cSS, csize = csize) %>%
-    #        mutate(id = row_number(), code = NA) %>%
-    #        select(id, everything())
-    #for (i in 1:nrow(contour_tiles)) {        # need to increase speed....
-    #  if (rand.load>0) {
-    #    roundi <- i/rand.load
-    #    flush.console()
-    #    if (roundi == round(roundi, 0)) {
-    #      perc_complete <- (i/(contour.points*contour.points))*100
-    #      cat(perc_complete, "%")
-    #    } else cat(".")
-    #  }
-    #  metacont <- rma(yi = c(SS, contour_tiles$cSS[i]), sei = c(seSS, contour_tiles$csize[i]), method = ifelse(method == 'random', "PM", "FE"), level = (1-sig.level))
-    #  lc <- metacont$ci.lb
-    #  uc <- metacont$ci.ub
-    #  # code according to significance
-    #  if (lc < zero & uc < zero) contour_tiles$code[i] <- "sigless_col"   # sig < 0
-    #  if (lc < zero & uc > zero) contour_tiles$code[i] <- "nosig_col"   # not sig
-    #  if (lc > zero & uc > zero) contour_tiles$code[i] <- "sigmore_col"   # sig > 0
-    #}
+  if (method == "random")  {
+    
+    # optimised grid of all contour points
+    contour_tiles <- expand.grid(i = seq_along(cSS), j = seq_along(csize))
+    
+    progressr::with_progress({
+      p <- progressr::progressor(steps = nrow(contour_tiles))  # progress bar
+    
+      # calculate results for each grid point
+      results <- purrr::pmap(contour_tiles, function(i, j) {
+        # using rmeta::meta.summaries as it's much faster than metafor::rma
+        metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "random", conf.level = (1-sig_level))
+        lc <- metacont$summary - ci*metacont$se.summary
+        uc <- metacont$summary + ci*metacont$se.summary
+        
+        p() #update progress
+        
+        # code according to threshold
+        if (!is.na(zero)) {
+          if (lc < zero & uc < zero) return("sigless_col")   # sig < 0
+          if (lc < zero & uc > zero) return("nosig_col")   # not sig
+          if (lc > zero & uc > zero) return("sigmore_col")   # sig > 0
+        } else if (!is.na(lower)) {
+          if (lc > lower) return("clinsig_col")
+          if (lc <= lower) return("noclinsig_col")
+        } else if (!is.na(upper)) {
+          if (uc < upper) return("clinsig_col")
+          if (uc >= upper) return("noclinsig_col")
+        }
+        NA_character_
+      })
+      
+      # Assign values to contour_tiles
+      contour_tiles$code <- unlist(results)
+      
+    })
+    
+    contour_tiles <- cbind(contour_tiles, expand.grid(cSS = cSS, csize = csize))
   }
    
   #------------------------------#
@@ -503,7 +517,8 @@ InterpretationThreshold <- function(
   }
     if (method == 'random') {
       plot <- plot +
-        geom_tile(data = contour_tiles, aes(x = cSS, y = csize, fill = code))  # haven't tested this yet or its affect on the legend
+        geom_raster(data = contour_tiles, 
+          aes(x = cSS, y = csize, fill = code))
     }
   
     # Pooled effect lines
@@ -653,3 +668,13 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
   SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
   method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.0005)
+
+# Random effects with one study and statistical significance
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
+
+# Random effects with one study and clinical significance
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', upper = 0.95, sig_level = 0.15, contour_points = 100)

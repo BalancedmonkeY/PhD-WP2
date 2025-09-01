@@ -277,7 +277,7 @@ if (method=="random")  {
 
 	   for (j in 1:length(cSS))  {
 
-	      metacont <- meta.summaries(c(SS, cSS[j]), c(seSS, csize[i]), method=method, conf.level=(1-sig.level))
+	      metacont <- rmeta::meta.summaries(c(SS, cSS[j]), c(seSS, csize[i]), method=method, conf.level=(1-sig.level))
 	      lc <- metacont$summary - ci*metacont$se.summary
 	      uc <- metacont$summary + ci*metacont$se.summary
 
