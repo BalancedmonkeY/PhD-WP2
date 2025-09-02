@@ -122,10 +122,10 @@ InterpretationThreshold <- function(
   ci <- qnorm(1 - sig_level / 2)
   
   #Calculate current meta-analysis (using rma from {metafor})
-  current_meta <- metafor::rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "PM", "EE"), level = (1 - sig_level), measure = outcome)
+  current_meta <- metafor::rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "DL", "EE"), level = (1 - sig_level), measure = outcome)
   
   #Calculate updated meta-analysis (using rma from {metafor})
-  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = ifelse(method == 'random', "PM", "EE"), level = (1 - sig_level), measure = outcome)
+  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = ifelse(method == 'random', "DL", "EE"), level = (1 - sig_level), measure = outcome)
   updated_tau2 <- updated_meta$tau2
   
   
