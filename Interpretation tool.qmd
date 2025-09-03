@@ -6,6 +6,36 @@ editor: visual
 
 This document is to go over the details of the interpretation tool part of the update framework, which is based on the work by Langan et. al.
 
+```{r setup, include = FALSE}
+
+# Load function and example datasets
+source("InterpretationTool.R")
+
+# Remove progress bars when rendering
+if (!interactive()) {
+  progressr::handlers("void")
+}
+
+### Test Data antibiotics vs. control for the common cold to alleviate symptoms by 7 days ###
+raw_data_bin <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980", "Hoaglund_1950", "Kaiser_1996", "Lexomboon_1971", "McKerrow_1961", "Taylor_1977"),
+                   R.1 = c(7, 39, 97, 8, 5, 12), N.1 = c(7+39, 39+115, 97+49, 8+166, 5+10, 12+117), T.1 = rep("Treatment", 6),
+                   R.2 = c(10, 51, 94, 4, 8, 3), N.2 = c(10+12, 51+104, 94+48, 4+83, 8+10, 3+56), T.2 = rep("Control", 6))
+raw_data_new <- data.frame(StudyID = c(7), Study = c("Fake_1"),
+                           R.1 = c(63), N.1 = c(63+252), T.1 = rep("Treatment", 1),
+                           R.2 = c(77), N.2 = c(77+105), T.2 = rep("Control", 1))
+raw_data_new_multiple <- data.frame(StudyID = c(7, 8, 9), Study = c("Fake_1", "Fake_2", "Fake_3"),
+                           R.1 = c(63, 12, 45), N.1 = c(63+252, 12+34, 45+60), T.1 = rep("Treatment", 3),
+                           R.2 = c(77, 21, 58), N.2 = c(77+105, 21+25, 58+42), T.2 = rep("Control", 1))
+
+### Obtain study effects and standard errors #
+MAdata_bin <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_bin)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
+MAdata_bin_new <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_new)
+MAdata_bin_new_multiple <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_new_multiple)
+MAdata_bin$sei <- sqrt(MAdata_bin$vi)  # Calculate standard errors
+MAdata_bin_new$sei <- sqrt(MAdata_bin_new$vi)
+MAdata_bin_new_multiple$sei <- sqrt(MAdata_bin_new_multiple$vi)
+```
+
 # Derivation of contours
 
 This section will go over the derivation of forming the contours of the plot for different situations.
@@ -54,6 +84,20 @@ $$ {#eq-fixed-weight}
 
 Therefore, by substituting @eq-fixed-weight into @eq-rearranged-theta-new, we then get an equation for the contour threshold on the estimate-variance plane.
 
+##### Example plot
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 1)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
 #### Two new studies
 
 When expanding from one new study to two new studies, @eq-updated-estimate and @eq-updated-variance become
@@ -68,23 +112,37 @@ where $\hat\theta_{nj}$ and $w_{nj}$ are the estimates and weights of new studie
 
 Let
 
-$$w_{new} = w_{n1} + w_{n2}$$ {#eq-weight-2studies}
+$$w_{\bar{new}} = w_{n1} + w_{n2}$$ {#eq-weight-2studies}
 
-$$\hat\theta_{new} = \frac{w_{n1}\hat\theta_{n1} + w_{n2}\hat\theta_{n2}}{w_{n1} + w_{n2}}$$ {#eq-theta-2studies} Substituting @eq-weight-2studies and @eq-theta-2studies into @eq-meta-theta-2studies and @eq-meta-variance-2studies brings us back to equations @eq-updated-estimate and @eq-updated-variance. Therefore, everything else follows through as before, but with new definitions for $w_{new}$ and $\hat\theta_{new}$.
+$$\hat\theta_{\bar{new}} = \frac{w_{n1}\hat\theta_{n1} + w_{n2}\hat\theta_{n2}}{w_{n1} + w_{n2}}$$ {#eq-theta-2studies} Substituting @eq-weight-2studies and @eq-theta-2studies into @eq-meta-theta-2studies and @eq-meta-variance-2studies brings us back to equations @eq-updated-estimate and @eq-updated-variance. Therefore, everything else follows through as before, but with new definitions for $w_{\bar{new}}$ and $\hat\theta_{\bar{new}}$.
 
 #### Multiple new studies
 
 Where we are calculating the contour to $m$ new studies, the equations follow as if it was one new study, but $w_{new}$ and $\hat\theta_{new}$ are defined as
 
 $$
-w_{new} = \sum^m_{j=1}{w_{nj}}
+w_{\bar{new}} = \sum^m_{j=1}{w_{nj}}
 $$
 
 $$
-\hat\theta_{new} = \frac{\sum^m_{j=1}{w_{nj}\hat\theta_{nj}}}{\sum^m_{j=1}{w_{nj}}}
+\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{w_{nj}\hat\theta_{nj}}}{\sum^m_{j=1}{w_{nj}}}
 $$
 
 where $\hat\theta_{nj}$ and $w_{nj}$ are the estimates and weights of the new studies respectively, for $j = 1,2,...,m$.
+
+##### Example plot
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.0005)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
 
 ### Specific confidence interval bounds
 
@@ -112,6 +170,20 @@ $$
 
 Whilst in the fixed-effects framework, the extensions to multiple new studies is the same here as for statistical significance.
 
+##### Example plot
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', upper = 0.9)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
 ## Random-effects
 
 When working in the random-effects framework things get more complex as $\tau^2 \ne 0$ and is estimated from the studies in the meta-analysis, including the new studies.
@@ -128,9 +200,23 @@ Unfortunately, $\tau^2$, the between-study heterogeneity which is calculated fro
 
 As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, as per Langan et. al., the standard error-estimate plane is broken down into 'pixels', where $\tau^2$ is estimated at each pixel (calculated from the original studies as well as the new study represented by the pixel). For each pixel, $\tau^2$ value, $\hat\theta_{new}$, and $var(\hat\theta_{new})$ are plugged into the meta-analysis equations ( @eq-updated-estimate and @eq-updated-variance), but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed (i.e. whether 95% CI was one side of null effect). The result at each pixel is coloured according to whether the threshold was met. This easily extends to the clinical bound thresholds as well as the statistical significance.
 
-### Multiple new studies
+##### Example plot
 
-Under the fixed-effects model, the weighted sum of the new studies became the point that visually represented whether the updated meta-analysis was in a certain zone (as created by the contours). This worked because the lack of between-study heterogeneity simplified the maths to weighted averages (see [Multiple new studies]).
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
+### Multiple new studies {#multiple-new-studies-1}
+
+Under the fixed-effects model, the weighted sum of the new studies became the point that visually represented whether the updated meta-analysis was in a certain zone (as created by the contours). This worked because the lack of between-study heterogeneity simplified the maths to weighted averages (see [Multiple new studies](#multiple-new-studies-1)).
 
 Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' of the new studies doesn't work, as we cannot know from what new studies created the 'average' represented by the pixel. Furthermore, there would be no way of estimating $\tau^2$ without estimates of the new studies represented by the 'average'. For a single pixel representing the new studies 'average', without the new studies data, there could be multiple values of $\tau^2$.
 
@@ -140,10 +226,103 @@ The estimated between-study heterogeneity from the updated meta-analysis is prop
 
 The new studies 'average' that would be plotted (in addition to all the new studies) would be calculated as
 
-$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2}}}$$
-$$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2}$$
-where $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
+$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2}}}$$ {#eq-average-new-random} $$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2}$$ {#eq-average-new-var-random} where $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
 
-Then for each pixel, the updated pooled effect estimate and associated 95% confidence interval is calculated using equations @eq-updated-estimate, @eq-updated-variance and @eq-random-weight, where $\tau^2$ is the value from the updated meta-analysis from adding known new studies. As per the scenario with one new study, each pixel is coloured according to whether the specified threshold was met.
+As we're interested in how the 'average' new study (or contribution) impacts the updated meta-analysis, we need to consider the pooled estimate (and associated standard error/variance) in terms of the 'average' new study. The following equations satisfy this:
+
+$$
+\hat\theta = \sum^n_{i=1}{\frac{\hat\theta_i}{var(\hat\theta_i) + \tau^2}} + \frac{\hat\theta_{\bar{new}}}{var(\hat\theta_{\bar{new}})}
+$$ {#eq-pooled-est-random-multiple}
+
+$$
+var(\hat\theta) = 1/\sum^n_{i=1}{\frac{1}{var(\hat\theta_i) +\tau^2}} + \frac{1}{var(\hat\theta_{new})}
+$$ {#eq-pooled-se-random-multiple}
+
+Therefore, to build contours that show the effect of an 'average' new study, pixel by pixel, equations @eq-pooled-est-random-multiple and @eq-pooled-se-random-multiple are used, where $\hat\theta_{new}$ and $var(\hat\theta_{new})$ are substituted by the pixel values, and $\tau^2$ is the value from the updated meta-analysis. As per the scenario with one new study, each pixel is coloured according to whether the specified threshold was met. Note that $\tau^2$ is already incorporated into the pooled effect through equations @eq-average-new-random and @eq-average-new-var-random, which is why $\tau^2$ isn't needed in the latter elements of the equations above. This isn't needed for the fixed-effects model when considering multiple new studies due to how the weights are calculated, leading to simplified maths (i.e., weight is just the inverse of the variance).
 
 A potential extension, depending on time and resources, could be to estimate $\tau^2$ at each pixel by simulating $m$ new studies. This decision depends on the balance between computational resource and improving the approximation of $\tau^2$. In the current scenario, I feel that the assumption above is satisfactory - but this may change depending on how the plot's use is extended.
+
+##### Example plot
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.05)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
+## Interesting comparisons
+
+### Fixed vs Random (One new study)
+
+```{r, echo = FALSE, include = FALSE}
+result_fixed <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.1)
+result_random <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+# | fig-cap: "One new study"
+# | fig-subcap:
+# |   - "Fixed-effects"
+# |   - "Random-effects"
+# | layout-nrow: 2
+
+result_fixed$threshold_plot
+
+result_random$threshold_plot
+```
+
+### Fixed vs Random (Multiple studies)
+
+```{r, echo = FALSE, include = FALSE}
+result_fixed <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.05)
+result_random <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.05, contour_points = 100)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+# | fig-cap: "Multiple new studies"
+# | fig-subcap:
+# |   - "Fixed-effects"
+# |   - "Random-effects"
+# | layout-nrow: 2
+
+result_fixed$threshold_plot
+
+result_random$threshold_plot
+```
+
+### One vs multiple new studies (Random-effects)
+
+```{r, echo = FALSE, include = FALSE}
+result_one <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
+result_multiple <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+# | fig-cap: "Random-effects"
+# | fig-subcap:
+# |   - "One new study"
+# |   - "Multiple new studies"
+# | layout-nrow: 2
+
+result_one$threshold_plot
+
+result_multiple$threshold_plot
+```

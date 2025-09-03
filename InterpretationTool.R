@@ -13,36 +13,6 @@ library(metafor)
 library(progressr)
 library(rmeta)
 
-
-### Test Data antibiotics vs. control for the common cold to alleviate symptoms by 7 days ###
-raw_data_bin <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6), Study = c("Herne_1980", "Hoaglund_1950", "Kaiser_1996", "Lexomboon_1971", "McKerrow_1961", "Taylor_1977"),
-                   R.1 = c(7, 39, 97, 8, 5, 12), N.1 = c(7+39, 39+115, 97+49, 8+166, 5+10, 12+117), T.1 = rep("Treatment", 6),
-                   R.2 = c(10, 51, 94, 4, 8, 3), N.2 = c(10+12, 51+104, 94+48, 4+83, 8+10, 3+56), T.2 = rep("Control", 6))
-raw_data_new <- data.frame(StudyID = c(7), Study = c("Fake_1"),
-                           R.1 = c(63), N.1 = c(63+252), T.1 = rep("Treatment", 1),
-                           R.2 = c(77), N.2 = c(77+105), T.2 = rep("Control", 1))
-raw_data_new_multiple <- data.frame(StudyID = c(7, 8, 9), Study = c("Fake_1", "Fake_2", "Fake_3"),
-                           R.1 = c(63, 12, 45), N.1 = c(63+252, 12+34, 45+60), T.1 = rep("Treatment", 3),
-                           R.2 = c(77, 21, 58), N.2 = c(77+105, 21+25, 58+42), T.2 = rep("Control", 1))
-# raw_data_new <- data.frame(StudyID = c(7, 8, 9), Study = c("Fake_1", "Fake_2", "Fake_3"),
-#                            R.1 = c(9, 42, 90), N.1 = c(9+36, 42+105, 90+51), T.1 = rep("Treatment", 3),
-#                            R.2 = c(11, 48, 99), N.2 = c(11+15, 48+88, 99+62), T.2 = rep("Control", 3))
-# raw_data_con <- data.frame(StudyID = c(1, 2, 3, 4, 5, 6, 7), Study = c("Connor_2002", "Geier_2004", "Kinzler_1991", "Lehri_2004", "Halsch_2001", "Volz_1997", "Warnecke_1991"),
-#                        Mean.1 = c(5.7, 12.7, 12.3, 10.6, 3, 21, 25.61), Mean.2 = c(8.5, 12.3, 3.6, 9.2, 0.6, 16.2, 7.65),
-#                        SD.1 = c(7.6, 6.7, 8.7, 7.3, 7.5, 13, 12.8), SD.2 = c(4.2, 7.3, 8.4, 10, 4.6, 14.3, 15.9),
-#                        N.1 = c(17, 25, 29, 34, 20, 52, 20), N.2 = c(18, 25, 29, 23, 30, 48, 20),
-#                        T.1 = rep("Treatment", 7), T.2 = rep("Control", 7))
-### Obtain study effects and standard errors #
-MAdata_bin <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_bin)   # gives ES (effect estimate) and seES (sampling variances) on logOR scale for binary data
-MAdata_bin_new <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_new)
-MAdata_bin_new_multiple <- metafor::escalc(measure = 'RR', ai = R.1, bi = N.1-R.1, ci = R.2, di = N.2-R.2, data = raw_data_new_multiple)
-# MAdata_con <- escalc(measure = "MD", m1i = Mean.1, m2i = Mean.2, sd1i = SD.1, sd2i = SD.2, n1i = N.1, n2i = N.2, data = raw_data_con)
-MAdata_bin$sei <- sqrt(MAdata_bin$vi)  # Calculate standard errors
-MAdata_bin_new$sei <- sqrt(MAdata_bin_new$vi)
-MAdata_bin_new_multiple$sei <- sqrt(MAdata_bin_new_multiple$vi)
-# MAdata_con$sei <- sqrt(MAdata_con$vi)
-
-
 #' @param SS effect estimates of the current studies		
 #' @param seSS standard errors of the current studies
 #' @param SSnew effect estimates of the new study(ies)
@@ -111,9 +81,7 @@ InterpretationThreshold <- function(
     rand_load = 100
 ) {
   
-  progressr::handlers(global = TRUE)
-  
-  
+
   #----------------------------------------#
   # Calculate initial arguments/parameters #
   #----------------------------------------#
@@ -232,10 +200,20 @@ InterpretationThreshold <- function(
     
       # calculate results for each grid point
       results <- purrr::pmap(contour_tiles, function(i, j) {
-        # using rmeta::meta.summaries as it's much faster than metafor::rma
-        metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "random", conf.level = (1-sig_level))
-        lc <- metacont$summary - ci*metacont$se.summary
-        uc <- metacont$summary + ci*metacont$se.summary
+        
+        if (length(SSnew) == 1) {
+          # using rmeta::meta.summaries as it's much faster than metafor::rma
+          metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "random", conf.level = (1-sig_level))
+          lc <- metacont$summary - ci*metacont$se.summary
+          uc <- metacont$summary + ci*metacont$se.summary
+        # When there are multiple new studies, we have to make assumption that tau2 is constant across all pixels, and in terms of the 'average' new study contribution  
+        } else if (length(SSnew) > 1) {
+          sc_sum <- sum(size_current)
+          est <- (sum(size_current * SS) + cSS[i]/(csize[j]^2)) / (sc_sum + 1/(csize[j]^2))
+          se <- sqrt(1/(sc_sum + 1/(csize[j]^2)))
+          lc <- est - ci*se
+          uc <- est + ci*se
+        }
         
         p() #update progress
         
@@ -641,40 +619,3 @@ InterpretationThreshold <- function(
 #-----------------------------------------#
 #             End of function             #
 #-----------------------------------------#
-
-# Tests #
-
-# Study points, new points, both summary diamonds, and zero line
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', zero = 1)
-
-# Above but with different significance level
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.0025)
-
-# Threshold is now based on lower bound of confidence interval
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', lower = 1.1)
-
-# Threshold is now based on upper bound of confidence interval
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', upper = 0.9)
-
-# Multiple new studies
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
-  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.0005)
-
-# Random effects with one study and statistical significance
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
-
-# Random effects with one study and clinical significance
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei, 
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'random', outcome = 'RR', upper = 0.95, sig_level = 0.15, contour_points = 100)
