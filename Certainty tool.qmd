@@ -1,0 +1,54 @@
+---
+title: "Certainty tool"
+author: "Clareece Nevill"
+format: docx
+editor: visual
+---
+
+This document is to go over the details of the certainty tool part of the update framework.
+
+## Risk of Bias
+
+The risk of bias data should ideally have been completed by the time researchers use the update framework. Therefore, the risk of bias element of the certainty tool is about deciding:
+
+-   What proportions of studies were categorised at different levels of risk
+
+-   Whether any plausible or crucial bias that has been identified in studies is likely to seriously alter the results.
+
+These two key factors - defined by Cochrane - decide whether to downgrade the results, and by how many levels. However, the Cochrane advice doesn't give specifics to these factors (e.g., uses phrases such as 'most information', rather than a specific proportion).
+
+### Proportion of information
+
+The three broad categories are:
+
+1.  Most information is from studies at low risk of bias
+
+2.  Most information is from studies at low or unclear risk of bias
+
+3.  Proportion of information from studies at high risk of bias is sufficient to affect the interpretation of results
+
+I need to add values to these three categories, in terms of the proportion of studies with low, unclear, and high risk of bias. To do this, I will look through various Cochrane reviews and make estimates based on these (plus some leeway to avoid false negatives).
+
+The resulting function will have an option to amend the threshold values if researchers have strong reasoning linked with specifics related to their research.
+
+### Likely to alter results
+
+Within category (2) above, it is further split into:
+
+-   Plausible bias will **unlikely** seriously alter the results
+
+-   Plausible bias will **likely** seriously alter the results
+
+Within category (3) above, it is further split into:
+
+-   Crucial risk likely to **seriously** alter the results
+
+-   Crucial risk likely to **very seriously** alter the results
+
+To ascertain whether the identified bias in the studies will alter the results, a sensitivity analysis will be conducted by removing those studies with plausible/crucial risk. As in the above section, I will look through various Cochrane reviews to make estimates on what alteration to results would be classed as unlikely/likely and seriously/very seriously. Again, the resulting function will have an option to amend the threshold values if required.
+
+::: callout-tip
+## Idea
+
+The interpretation tool could be utilised when decided what is a significant alteration in the results. Specifically by looking at **removal** of studies, rather than **addition** of new studies.
+:::
