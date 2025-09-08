@@ -7,6 +7,34 @@ editor: visual
 
 This document is to go over the details of the certainty tool part of the update framework.
 
+## Datasets
+
+For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 6 Cochrane living systematic reviews that were identified by the survey that included updates, used GRADE, were in a clinical field, included a pairwise meta-analysis, had a consistent outcome, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, so will simplify data curation.
+
+### [Chronic rhinosinusitis](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013513.pub3/full "Cochrane website")
+
+We are going to focus on the primary outcome of health-related quality of life - disease-specific (SNOT-22, range 0 to 110, lower = better) for dupilimab versus placebo. In the March 2021 version, this estimate was based on 3 studies. This was the same across versions.
+
+### [Convalescent plasma COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013600.pub6/full "Cochrane website")
+
+We are going to focus on the primary outcome of all-cause mortality at up to day 28, for convalescent plasma vs placebo or standard care in those with moderate to severe disease. In the May 2023 (and February 2023) version, this estimate was based on 21 RCTs. In the May 2021 version, the estimate was based on 7 RCTs. In earlier versions, the outcomes were not the exact same.
+
+### [Ivermectin COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015017.pub3 "Cochrane website")
+
+We are going to focus on the primary outcome of all-cause mortality at day 28, for those in inpatient settings with moderate to severe disease. In the June 2022 version, the estimate was based on 3 RCTs. In the July 2021 version, it was based on 2 RCTs.
+
+### [Non-small cell lung cancer](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013257.pub3 "Cochrane website")
+
+We are going to focus on the primary outcome of overall survival (by PD-L1 expression $\ge$ 50%, for single immune checkpoint inhibitors. In the April 2021 (and December 2020) version, this estimate was based on 6 studies.
+
+### [Remdesivir COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014962.pub2/full "Cochrane website")
+
+Focus on primary outcome of all-cause mortality up to day 28 for individuals with moderate to severe COVID-19. In January 2023 (and August 2021), this was based on 4 RCTs.
+
+### [Systemic corticosteroids COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014963.pub2/full "Cochrane website")
+
+Focus on primary outcome of all-cause mortality up to day 30 for corticosteroids plus standard care vs standard care (plus/minus placebo). In November 2022, this was based on 10 RCTs. The primary outcome for August 2021 was split differently, and so can't compare.
+
 ## Risk of Bias
 
 The risk of bias data should ideally have been completed by the time researchers use the update framework. Therefore, the risk of bias element of the certainty tool is about deciding:

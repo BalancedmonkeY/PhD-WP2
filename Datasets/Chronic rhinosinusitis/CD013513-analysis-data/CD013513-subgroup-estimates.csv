@@ -1,0 +1,7 @@
+﻿Analysis group,Analysis number,Subgroup,Subgroup number,Experimental cases,Experimental N,Control cases,Control N,Weight,Mean,CI start,CI end,Heterogeneity Tau²,Tau² CI start,Tau² CI end,Heterogeneity Chi²,Heterogeneity df,Heterogeneity P,Heterogeneity I²,Effect Z,Effect T,Effect P,ID
+1,1,Up to 24 weeks,1,,468,,316,100.0,-19.612986,-22.536504,-16.689467,0.0,,,1.619516,2,0.444966,0.0,13.148795,,0.0,subgroup:460563994796441693
+1,1,At 52 weeks,2,,150,,153,100.0,-22.38,-27.10161,-17.65839,0.0,,,0.0,0,1.0,0.0,9.29005,,0.0,subgroup:460563994796965985
+1,5,Up to 24 weeks,1,,468,,316,100.0,-1.799167,-2.247137,-1.351197,0.096032,,,5.696852,2,0.057936,64.892889,7.871737,,0.0,subgroup:460563994798014575
+1,5,Up to 52 weeks,2,,150,,153,100.0,-2.34,-2.766567,-1.913433,0.0,,,0.0,0,1.0,0.0,10.751683,,0.0,subgroup:460563994798276723
+2,4,"Patients still meeting criteria for surgery at 24 weeks ",1,38,54,46,51,97.760115,0.780193,0.641781,0.948457,0.0,,,0.0,0,1.0,0.0,2.491051,,0.012737,subgroup:460563994799849610
+2,4,Patients requiring 'rescue' surgery during trial,2,4,20,3,10,2.239885,0.666667,0.183476,2.422357,0.0,,,0.0,0,1.0,0.0,0.615946,,0.53793,subgroup:460563994800111756
