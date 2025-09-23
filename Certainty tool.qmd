@@ -7,35 +7,65 @@ editor: visual
 
 This document is to go over the details of the certainty tool part of the update framework.
 
-## Datasets
+# Datasets
 
-For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 6 Cochrane living systematic reviews that were identified by the survey that included updates, used GRADE, were in a clinical field, included a pairwise meta-analysis, had a consistent outcome, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, so will simplify data curation.
+For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 6 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, so will simplify data curation. Multiple outcomes were extracted to gain more data.
 
-### [Chronic rhinosinusitis](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013513.pub3/full "Cochrane website")
+## [Chronic rhinosinusitis](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013513.pub3/full "Cochrane website")
 
-We are going to focus on the primary outcome of health-related quality of life - disease-specific (SNOT-22, range 0 to 110, lower = better) for dupilimab versus placebo. In the March 2021 version, this estimate was based on 3 studies. This was the same across versions.
+-   Outcome of health-related quality of life - disease-specific (SNOT-22, range 0 to 110, lower = better) for dupilimab versus placebo. In the March 2021 version, this estimate was based on 3 studies. This was the same across versions.
 
-### [Convalescent plasma COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013600.pub6/full "Cochrane website")
+-   Outcome of disease severity - VAS (range 0 to 10, lower = better) for dupilimab versus placebo. In March 2021 version, this estimate was based on 3 studies. This was the same across versions.
 
-We are going to focus on the primary outcome of all-cause mortality at up to day 28, for convalescent plasma vs placebo or standard care in those with moderate to severe disease. In the May 2023 (and February 2023) version, this estimate was based on 21 RCTs. In the May 2021 version, the estimate was based on 7 RCTs. In earlier versions, the outcomes were not the exact same.
+-   Outcome of serious adverse events (duplimab vs placebo). In March 2021, this was based on 3 studies. This was the same across versions.
 
-### [Ivermectin COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015017.pub3 "Cochrane website")
+-   Outcome of avoidance of surgery (duplimab vs placebo). In March 2021, this was based on 2 studies. This was the same across versions.
 
-We are going to focus on the primary outcome of all-cause mortality at day 28, for those in inpatient settings with moderate to severe disease. In the June 2022 version, the estimate was based on 3 RCTs. In the July 2021 version, it was based on 2 RCTs.
+-   Outcome of adverse events (duplimab vs placebo). In March 2021, this was based on 3 studies. This was the same across versions.
 
-### [Non-small cell lung cancer](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013257.pub3 "Cochrane website")
+## [Convalescent plasma COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013600.pub6/full "Cochrane website")
 
-We are going to focus on the primary outcome of overall survival (by PD-L1 expression $\ge$ 50%, for single immune checkpoint inhibitors. In the April 2021 (and December 2020) version, this estimate was based on 6 studies.
+-   Outcome of all-cause mortality at up to day 28, for convalescent plasma vs placebo or standard care in those with moderate to severe disease. In the May 2023 (and February 2023) version, this estimate was based on 21 RCTs. In the May 2021 version, the estimate was based on 7 RCTs. In earlier versions, the outcomes were not the exact same.
 
-### [Remdesivir COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014962.pub2/full "Cochrane website")
+-   Outcome of clinical worsening at up to day 28. In the May 2023 (and February 2023) version, this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
-Focus on primary outcome of all-cause mortality up to day 28 for individuals with moderate to severe COVID-19. In January 2023 (and August 2021), this was based on 4 RCTs.
+-   Outcome of clinical improvement at up to day 28. In the May 2023 (and February 2023) version, this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
-### [Systemic corticosteroids COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014963.pub2/full "Cochrane website")
+-   Outcome of grades 3 and 4 adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In May 2021, this was based on 4 RCTs. In earlier versions, the outcomes were not the exact same. When looking at the May/February 2023 versions, it is not clear which studies were included; in the text it mentions the study Avendano-Sola 2021, but in the forest plots it mentions AlQahtani 2021. For this reason, we are not including these results.
 
-Focus on primary outcome of all-cause mortality up to day 30 for corticosteroids plus standard care vs standard care (plus/minus placebo). In November 2022, this was based on 10 RCTs. The primary outcome for August 2021 was split differently, and so can't compare.
+-   Outcome of serious adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
-## Risk of Bias
+## [Ivermectin COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015017.pub3 "Cochrane website")
+
+-   Outcome of all-cause mortality at day 28, for those in inpatient settings with moderate to severe disease. In the June 2022 version, the estimate was based on 3 RCTs. In the July 2021 version, it was based on 2 RCTs.
+
+-   Outcome of serious adverse events (under same settings as above). In the June 2022 version, this was based on 2 RCTs. This outcome was not present in earlier versions.
+
+-   Outcome of any adverse events (same settings). In June 2022, this was based on 3 RCTs. In July 2021, this was based on 1 RCT.
+
+-   Outcome of viral clearance at 7 days. In June 2022, this was based on 3 RCTS. In earlier versions, the outcome was not the exact same definition.
+
+## [Non-small cell lung cancer](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013257.pub3 "Cochrane website")
+
+-   Outcome of overall survival (by PD-L1 expression $\ge$ 50%, for single immune checkpoint inhibitors. In the April 2021 (and December 2020) version, this estimate was based on 6 studies.
+
+-   Outcome of adverse events of grade 3-4 (for same comparison above). In April 2021 (and December 2020), this was based on 5 studies.
+
+## [Remdesivir COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014962.pub2/full "Cochrane website")
+
+-   Outcome of all-cause mortality up to day 28 for individuals with moderate to severe COVID-19. In January 2023 (and August 2021), this was based on 4 RCTs.
+
+-   Outcome of adverse events (any grade) up to day 28. In January 2023, this was based on 4 RCTs. In August 2021, this was based on 3 RCTs.
+
+-   Outcome of serious adverse events up to day 28. In January 2023, this was based on 4 RCTs. In August 2021, this was based on 3 RCTs.
+
+## [Systemic corticosteroids COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014963.pub2/full "Cochrane website")
+
+-   Outcome of all-cause mortality up to day 30 for corticosteroids plus standard care vs standard care (plus/minus placebo). In November 2022, this was based on 10 RCTs. The outcome for August 2021 was split differently, and so can't compare.
+
+-   Outcome of all-cause mortality up to day 120 (same settings as above). In November 2022, this was based on 3 RCTs. The outcome for August 2021 was split differently, and so can't compare.
+
+# Risk of Bias
 
 The risk of bias data should ideally have been completed by the time researchers use the update framework. Therefore, the risk of bias element of the certainty tool is about deciding:
 
@@ -45,7 +75,7 @@ The risk of bias data should ideally have been completed by the time researchers
 
 These two key factors - defined by Cochrane - decide whether to downgrade the results, and by how many levels. However, the Cochrane advice doesn't give specifics to these factors (e.g., uses phrases such as 'most information', rather than a specific proportion).
 
-### Proportion of information
+## Proportion of information
 
 The three broad categories are:
 
@@ -59,7 +89,7 @@ I need to add values to these three categories, in terms of the proportion of st
 
 The resulting function will have an option to amend the threshold values if researchers have strong reasoning linked with specifics related to their research.
 
-### Likely to alter results
+## Likely to alter results
 
 Within category (2) above, it is further split into:
 
@@ -80,3 +110,67 @@ To ascertain whether the identified bias in the studies will alter the results, 
 
 The interpretation tool could be utilised when decided what is a significant alteration in the results. Specifically by looking at **removal** of studies, rather than **addition** of new studies.
 :::
+
+## Risk of Bias tools
+
+Differences between ROB1 and RoB2 (which both feature in threshold datasets). Whilst RoB 2 is the later version and thus recommended, it is a lot more time consuming - as such, many researchers still stick with RoB 1. Therefore, it would be ideal if the certainty tool could function regardless of which RoB tool was used.
+
+In the Cochrane data/reports, when RoB 1 tool was used, and overall rating doesn't appear to be calculated. When this is the case, we can use Stewart et al's probability matrices to give an overall rating that can be used (as RoB 2 gives an overall rating). Note - in the overall probability matrix for risk of bias, for some reason there aren't rows for when 'Other' could be classified as 'unclear'. Therefore, in such cases, we've made the assumption that 'unclear' holds the same significance as if it was rated as 'high' (especially given that Stewart's network appeared to be 'optimistic' than Cochrane, and researchers have indicated that they wish for more false positives, than false negatives.
+
+::: callout-note
+## Different results
+
+The developed tool may behave differently depending on the Risk of Bias tool that was used. Often, the ROB1 tool was reported across all outcomes, and the overall rating is having to be calculated. This may be missing important factors that are only specific to certain outcomes (see chronic rhinosinusitis example). Either the tool only gets used on ROB2 datasets, or it comes with a warning if using ROB1, and maybe the 'adjustment factor' idea can 'fix' these cases.
+:::
+
+## Dialling in thresholds
+
+I've created a function that calculated the weighted average risk of bias, based on the meta-analytic weights used. There's potential that this could encompass both elements mentioned above (as a high risk study that gives a small weight is unlikely to change the results (depending on how different the estimate is from the pooled result)).
+
+Let's see what the average RoB is for each of our datasets.
+
+```{r, echo = FALSE}
+library(dplyr)
+library(purrr)
+library(knitr)
+source("RoB_downgrades.R")
+
+# Read in info from all datasets
+primary_data <- readxl::read_excel("Datasets/primary_info.xlsx", sheet = "Studies")
+GRADE_results <- readxl::read_excel("Datasets/primary_info.xlsx", sheet = "GRADE")
+primary_data$Weight[primary_data$Weight == "NA" | is.na(primary_data$Weight)] <- "0"  # Where there is no weight associated, specify it as zero.
+primary_data$`other bias`[primary_data$`other bias` == "Unclear risk"] <- "High risk"
+
+# Calculate average for each dataset and add to GRADE dataframe
+GRADE_results$RoB_avg <- mapply(function(review_type, version_date, outcome, Rob_tool_used) {
+  # subset primary_data
+  data <- primary_data %>% 
+    filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome)
+  # run RoB_downgrades()
+  result <- RoB_downgrades(
+    data = data,
+    rob_tool = Rob_tool_used,
+    overall_rob = "Overall bias",
+    random_selection = "random sequence generation (selection bias)",
+    allocation_selection = "allocation concealment (selection bias)",
+    performance = "performance bias",
+    detection = "detection bias",
+    attrition = "attrition bias",
+    reporting = "reporting bias",
+    other = "other bias",
+    weights = "Weight"
+  )
+  # obtain average grade
+  result$RoB_avg
+},
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Rob_tool)
+
+# Display results
+kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Rob_tool", "Downgrade RoB", "RoB_avg")) %>% arrange(RoB_avg), digits = 2)
+```
+
+From the above, one can see that at a weighted average RoB score of 1.6, the reviews started getting downgraded by 1 level. More data is needed to see if this is a valid method, and to define better thresholds.
+
+### Adjustment factor
+
+So far, the idea of an adjustment factor seems sensible as, with the current approach, whether research teams downgrade based on risk of bias is not a straight relationship with the weighted average RoB. A first approach to this that is very rudimentary is to move the default threshold such that the weighted average RoB 'correctly' matches to the set levels the researchers downgraded the outcome. The new thresholds are then used when considering the review with new studies. This way, it'll be focusing on the likely change.
