@@ -251,10 +251,42 @@ In the next sections, I'm going to investigate a bit further the studies that di
 
 ### Downgraded 1 level, but score of less than 1.5
 
+In the chronic rhinosinusitis dataset, for outcomes VAS (disease severity) and avoidance of surgery, the weighted average RoB score was 1 (the lowest possible), yet the authors downgraded the evidence by one level for risk of bias. Note that they used the RoB 1 tool, and assessed it across all outcomes.
+
+For VAS, this was due to "study limitations: methods or criteria used in the measurement of the outcome were not validated". In the risk of bias table that is available, the only related information I can find is within the 'selective reporting' that there was some lack of clarity regarding the choice of measurement tool and that for VAS, outcome was not pre-specified in the original trial registry data. This led to an overall rating of 'Unclear risk' for all 3 studies.
+
+For avoidance of surgery, this was due to "serious limitations: the criteria used for requiring/not requiring 'rescue surgery' were unclear". This is similar to the above outcome, in that 'lack of clarity' is mentioned. Specifically, the number of participants who required surgery was missing. As above, this led to an overall rating of 'Unclear' risk for all 3 studies.
+
+As the researchers didn't give an overall risk of bias, the function had to estimate it, and it put all 3 studies as most likely being 'low risk' (note, with 100% probability according to Stewart et. al.).
+
+#### What does this mean?
+
+The big problem here is that the RoB 1 tool doesn't distinguish between different outcomes, and just considers it all together, yet GRADE wants researchers to consider each selection of evidence regarding each specific outcome. This is essentially incompatible.
+
+My suggestion is therefore to say that this tool will not perform as well if RoB 1 is being used, due to the above. Researchers can use the proposed tool, but with caution, and will likely have to use the adjustment factor proposed in the below section @sec-adjustment-factor.
+
 ### Didn't downgrade, but score of more than 1.5
+
+In the convalescent plasma dataset, for outcomes serious adverse events a weighted average RoB score of 1.79 was given respectively for the Feburary 2023 version (which was the same studies in May 2023). In the oral anticoagulation dataset, for outcomes mortality at 6 months and 12 months, a weighted average RoB score of 2.88 and 2.66 was given. Yet for these four outcomes, the researchers did not downgrade the evidence regarding risk of bias.
+
+For serious adverse events in the convalescent plasma dataset, most of the studies were of 'some concerns'. The RoB score for serious adverse events of 1.79 not matching up with downgrading isn't of huge concern and could be categorised as being down to 'difference of opinion' on their significance.
+
+For the mortality outcomes in the oral anticoagulation dataset, the researchers stated that there was "some concern with risk of bias associated with unclear allocation concealment, taken into account when downgrading from high to moderate certainty". For both outcomes, the GRADE rating was 'Moderate', downgraded by one level due to serious imprecision. It would seem that the researchers felt this downgrading incorporated the concerns regarding risk of bias, and so no further downgrading was required.
+
+#### What does this mean?
+
+Both scenarios could be corrected with the adjustment factor being proposed below. For convalescent plasma, the 'difference of opinions' between the default settings and the researchers could be adjusted by changing the threshold (going from 1.5 to 1.8 wouldn't be a huge adjustment). For oral coagulation, the researchers are clearly doing their own thing regarding risk of bias, which they can account for by changing the threshold for downgrading (again) due to risk of bias to a much higher value.
 
 ### Downgraded only 1 level, but score of more than 2.75
 
-### Adjustment factor
+There were five instances where all studies have overall high risk of bias, yet the review team only downgraded the evidence by one level due to risk of bias (Colchicine COVID-19 - mortality and worsening; inhaled corticosteroids COVID-19 - symptom resolution; fluvoxamine COVID-19 - serious adverse effects and any adverse effects). The guidelines for downgrading for two levels has the additional factor than any crucial risk identified needs to also likely to very seriously alter the results. The standard way to assessing this would be to conduct a sensitivity analysis, removing the studies that had high risk of bias. However, in the case where all studies were deemed to be high risk (such as these five examples), this would result in no effect estimate being available, and therefore, no comparison available.
 
-So far, the idea of an adjustment factor seems sensible as, with the current approach, whether research teams downgrade based on risk of bias is not a straight relationship with the weighted average RoB. A first approach to this that is very rudimentary is to move the default threshold such that the weighted average RoB 'correctly' matches to the set levels the researchers downgraded the outcome. The new thresholds are then used when considering the review with new studies. This way, it'll be focusing on the likely change.
+#### What does this mean?
+
+I get the feeling that is is *very* rare for the evidence to be downgraded by two levels due to risk of bias. This is from experience from extracting data (found no examples), and the fact that where there is a high amount of risk of bias, a sensitivity analysis may not be informative (as described above). Therefore, I think it would be useful to have an option in the tool so state that there is only one threshold (i.e., for downgrading one level), and for that option to be the default.
+
+### Adjustment factor {#sec-adjustment-factor}
+
+So far, the idea of an adjustment factor seems sensible as, with the current approach, some research teams downgrade based on risk of bias due to a different thresholds/criteria (see sections above); the data collected did not give a straight relationship with the weighted average RoB.
+
+A first approach to this, that is very rudimentary, is to move the default threshold such that the weighted average RoB 'correctly' matches to the set levels the researchers downgraded the outcome for in the most recent version. The new thresholds are then used when considering the review with new studies. This way, it'll be focusing on the likely change from the addition of new studies, rather than a change due to the differences between researchers judgement and tool defaults.
