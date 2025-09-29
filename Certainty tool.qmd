@@ -9,7 +9,21 @@ This document is to go over the details of the certainty tool part of the update
 
 # Datasets
 
-For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 6 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, so will simplify data curation. Multiple outcomes were extracted to gain more data.
+For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 7 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, so will simplify data curation. Multiple outcomes were extracted to gain more data.
+
+## [Antibiotics COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015025/full "Cochrane website")
+
+Below outcomes are from October 2021 version regarding inpatients with confirmed moderate to severe COVID-19.
+
+-   All-cause mortality at day 28 based on 4 RCTs.
+
+-   Improvement of clinical status at day 28, based on 3 RCTs.
+
+-   Serious adverse events, based on 4 RCTs.
+
+-   Any adverse events, based on 3 RCTs.
+
+-   Cardiac arrhythmias, based on 4 RCTs.
 
 ## [Chronic rhinosinusitis](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013513.pub3/full "Cochrane website")
 
@@ -23,6 +37,14 @@ For various elements of the certainty tool, datasets from existing living system
 
 -   Outcome of adverse events (duplimab vs placebo). In March 2021, this was based on 3 studies. This was the same across versions.
 
+## [Colchicine COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015045/full "Cochrane website")
+
+Below outcomes are for hospitalised patients with COVID-19 and moderate to severe disease. Number of studies are as off October 2021.
+
+-   All-cause mortality at day 28 based on 2 studies.
+
+-   Worsening of clinical status up to day 28 based on 2 studies.
+
 ## [Convalescent plasma COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013600.pub6/full "Cochrane website")
 
 -   Outcome of all-cause mortality at up to day 28, for convalescent plasma vs placebo or standard care in those with moderate to severe disease. In the May 2023 (and February 2023) version, this estimate was based on 21 RCTs. In the May 2021 version, the estimate was based on 7 RCTs. In earlier versions, the outcomes were not the exact same.
@@ -35,6 +57,26 @@ For various elements of the certainty tool, datasets from existing living system
 
 -   Outcome of serious adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
+## [Fluvoxamine COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015391/full "Cochrane website")
+
+The below outcomes are for September 2022 version.
+
+-   All-cause mortality at day 28 based on 2 RCTs.
+
+-   All-cause admission to hospital or death (before hospital admission) based on 2 RCTs.
+
+-   Serious adverse events based on 2 RCTs.
+
+-   Any adverse events based on 2 RCTs.
+
+## [Inhaled corticosteroids COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015125/full "Cochrane website")
+
+-   All-cause mortality (up to 30 days). As of March 2022, this was based on 3 studies.
+
+-   Admission to hospital or death (up to 30 days). As of March 2022, this was based on 2 studies.
+
+-   Symptom resolution (all initial symptoms resolves at day 14). As of March 2022, this was based on 2 studies.
+
 ## [Ivermectin COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015017.pub3 "Cochrane website")
 
 -   Outcome of all-cause mortality at day 28, for those in inpatient settings with moderate to severe disease. In the June 2022 version, the estimate was based on 3 RCTs. In the July 2021 version, it was based on 2 RCTs.
@@ -45,11 +87,35 @@ For various elements of the certainty tool, datasets from existing living system
 
 -   Outcome of viral clearance at 7 days. In June 2022, this was based on 3 RCTS. In earlier versions, the outcome was not the exact same definition.
 
+## [Janus kinase inhibitors COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015209/full "Cochrane website")
+
+-   All-cause mortality (up to day 28). As of June 2022, this was based on 6 RCTs.
+
+-   All-cause mortality (up to day 60). As of June 2022, this was based on 2 RCTs.
+
+-   Adverse events (any grade). As of June 2022, this was based on 3 RCTs.
+
+-   Serious adverse events. As of June 2022, this was based on 4 RCTs.
+
+-   Secondary infection. As of June 2022, this was based on 4 RCTs.
+
 ## [Non-small cell lung cancer](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013257.pub3 "Cochrane website")
 
 -   Outcome of overall survival (by PD-L1 expression $\ge$ 50%, for single immune checkpoint inhibitors. In the April 2021 (and December 2020) version, this estimate was based on 6 studies.
 
 -   Outcome of adverse events of grade 3-4 (for same comparison above). In April 2021 (and December 2020), this was based on 5 studies.
+
+## [Oral anticoagulation](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD006466.pub7/full "Cochrane website")
+
+Looking at VKA compared to no prophylaxis
+
+-   Mortality at 6 months. As of October 2021, this was based on 3 RCTs.
+
+-   Mortality at 12 months. As of October 2021 (and December 2017), this was based on 5 RCTs.
+
+-   Major bleeding (follow-up 12 months). As of October 2021 (and December 2017), this was based on 5 RCTs.
+
+-   Minor bleeding (follow-up 12 months). As of October 2021 (and December 2017), this was based on 4 RCTs.
 
 ## [Remdesivir COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014962.pub2/full "Cochrane website")
 
@@ -169,7 +235,25 @@ GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_result
 kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Rob_tool", "Downgrade RoB", "RoB_avg")) %>% arrange(RoB_avg), digits = 2)
 ```
 
-From the above, one can see that at a weighted average RoB score of 1.6, the reviews started getting downgraded by 1 level. More data is needed to see if this is a valid method, and to define better thresholds.
+From the above, one can see that at a weighted average RoB score of 1.5, the reviews started getting downgraded by 1 level. None of the example datasets downgraded by two levels for risk of bias, yet some did have the maximum weighted average RoB score of 3.
+
+::: callout-important
+## Proposed thresholds
+
+Based on the current data, a basic default threshold would be that when the weighted average RoB score is:
+
+-   Greater than or equal to 1.5 - downgrade by one level
+
+-   Greater than or equal to 2.75 - downgrade by two levels
+:::
+
+In the next sections, I'm going to investigate a bit further the studies that didn't quite follow the general pattern to see if there is anything else quantifiable that can be used to 'fine-tune' the tool.
+
+### Downgraded 1 level, but score of less than 1.5
+
+### Didn't downgrade, but score of more than 1.5
+
+### Downgraded only 1 level, but score of more than 2.75
 
 ### Adjustment factor
 

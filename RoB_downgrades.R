@@ -34,7 +34,7 @@ RoB_downgrades <- function(
     other,
     weights,
     one_level_threshold = 1.5,
-    two_level_threshold = 2
+    two_level_threshold = 2.75
 ) {
   
   #-------------------------------------------------------------------------------------#
