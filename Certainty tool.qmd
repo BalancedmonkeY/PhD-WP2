@@ -213,7 +213,7 @@ GRADE_results$RoB_avg <- mapply(function(review_type, version_date, outcome, Rob
   data <- primary_data %>% 
     filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome)
   # run RoB_downgrades()
-  result <- RoB_downgrades(
+  result <- weighted_RoB(
     data = data,
     rob_tool = Rob_tool_used,
     overall_rob = "Overall bias",
@@ -226,8 +226,8 @@ GRADE_results$RoB_avg <- mapply(function(review_type, version_date, outcome, Rob
     other = "other bias",
     weights = "Weight"
   )
-  # obtain average grade
-  result$RoB_avg
+  # return average grade
+  result
 },
 GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Rob_tool)
 
@@ -263,7 +263,11 @@ As the researchers didn't give an overall risk of bias, the function had to esti
 
 The big problem here is that the RoB 1 tool doesn't distinguish between different outcomes, and just considers it all together, yet GRADE wants researchers to consider each selection of evidence regarding each specific outcome. This is essentially incompatible.
 
+::: callout-important
+## RoB 1 caution
+
 My suggestion is therefore to say that this tool will not perform as well if RoB 1 is being used, due to the above. Researchers can use the proposed tool, but with caution, and will likely have to use the adjustment factor proposed in the below section @sec-adjustment-factor.
+:::
 
 ### Didn't downgrade, but score of more than 1.5
 
@@ -283,7 +287,13 @@ There were five instances where all studies have overall high risk of bias, yet 
 
 #### What does this mean?
 
-I get the feeling that is is *very* rare for the evidence to be downgraded by two levels due to risk of bias. This is from experience from extracting data (found no examples), and the fact that where there is a high amount of risk of bias, a sensitivity analysis may not be informative (as described above). Therefore, I think it would be useful to have an option in the tool so state that there is only one threshold (i.e., for downgrading one level), and for that option to be the default.
+I get the feeling that is is *very* rare for the evidence to be downgraded by two levels due to risk of bias. This is from experience from extracting data (found no examples), and the fact that where there is a high amount of risk of bias, a sensitivity analysis may not be informative (as described above).
+
+::: callout-important
+## Default second threshold
+
+Therefore, I think it would be useful to have an option in the tool so state that there is only one threshold (i.e., for downgrading one level), and for that option to be the default.
+:::
 
 ### Adjustment factor {#sec-adjustment-factor}
 

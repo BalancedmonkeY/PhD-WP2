@@ -1,5 +1,5 @@
 #---------------------------------------------------------#
-# Tool for estimating any downgrading due to risk of bias #
+# Tools for estimating any downgrading due to risk of bias #
 #---------------------------------------------------------#
 
 library(dplyr)
@@ -15,13 +15,9 @@ library(dplyr)
 #' @param reporting Reporting bias rating (RoB 1 only)
 #' @param other Other bias rating (RoB 1 only)
 #' @param weights Meta-analysis weighting for each study
-#' @param one_level_threshold Threshold value of weighted RoB value (1 = all low, 3 = all high) that means downgrading by one level
-#' @param two_level_threshold Threshold value of weighted RoB value (1 = all low, 3 = all high) that means downgrading by two levels
-#' @return list of 2 items:
-#' -> RoB_avg = weighted RoB value (1 = all low, 3 = all high)
-#' -> levels = Number of levels the evidence is likely to be downgraded due to risk of bias (0, 1, or 2)
+#' @return RoB_avg = weighted RoB value (1 = all low, 3 = all high)
 
-RoB_downgrades <- function(
+weighted_RoB <- function(
     data, 
     rob_tool,
     overall_rob,
@@ -32,9 +28,7 @@ RoB_downgrades <- function(
     attrition,
     reporting,
     other,
-    weights,
-    one_level_threshold = 1.5,
-    two_level_threshold = 2.75
+    weights
 ) {
   
   #-------------------------------------------------------------------------------------#
@@ -204,23 +198,69 @@ RoB_downgrades <- function(
   weighted_average <- sum(data[["weighted_RoB"]]) / sum(as.numeric(data[[weights]][data[["RoB_value"]] != 0]))
   
   
+  #----------------#
+  # Return RoB_avg #
+  #----------------#
+  
+  return(unname(weighted_average))
+  
+}
+
+#' @param RoB_avg Weighted average RoB value calculated from weighted_RoB
+#' @param one_level_threshold Threshold value of weighted RoB value (1 = all low, 3 = all high) that means downgrading by one level
+#' @param two_level_threshold Threshold value of weighted RoB value (1 = all low, 3 = all high) that means downgrading by two levels
+#' @param prev_RoB_avg Weighted average risk of bias score from the previous version
+#' @param prev_levels The number of levels the evidence was downgraded due to risk of bias in the previous version
+#' @return levels = Number of levels the evidence is likely to be downgraded due to risk of bias (0, 1, or 2)
+
+RoB_downgrades <- function(
+    RoB_avg,
+    one_level_threshold = 1.5,
+    two_level_threshold = NULL,
+    prev_RoB_avg,
+    prev_levels
+) {
+  
+  #--------------------------------------------------------#
+  # Adjust thresholds if needed, based on previous version #
+  #--------------------------------------------------------#
+  
+  if (!is.null(prev_RoB_avg) & !is.null(prev_levels)) {
+    # increase one_level_threshold if not previously downgraded, but previous score was higher than 1.5
+    if (prev_levels == 0 & prev_RoB_avg >= 1.5) {
+      one_level_threshold <- ceiling(prev_RoB_avg*20)/20 # puts threshold at next highest value, on 0.05 scale
+    }
+    # decrease one_level_threshold if previously downgraded, but previous score was lower than 1.5
+    else if (prev_levels >= 1 & prev_RoB_avg < 1.5) {
+      one_level_threshold <- floor(prev_RoB_avg*20)/20
+    }
+  }
+  
+  # don't need to adjust the threshold for two levels of downgrading as this is set to NULL by default
+  
+  
   #---------------------------------------------------------------#
   # Decide how many levels to downgrade based on weighted average #
   #---------------------------------------------------------------#
   
   downgrade_levels <- 
-    if (weighted_average < one_level_threshold) {
-      0
-    } else if (weighted_average >= one_level_threshold & weighted_average < two_level_threshold) {
-      1
-    } else if (weighted_average >= two_level_threshold) {
-      2
+    if (!is.null(two_level_threshold)) {
+      if (RoB_avg < one_level_threshold) {
+        0
+      } else if (RoB_avg >= one_level_threshold & RoB_avg < two_level_threshold) {
+        1
+      } else if (RoB_avg >= two_level_threshold) {
+        2
+      }
+    } else {
+      if (RoB_avg < one_level_threshold) {
+        0
+      } else if (RoB_avg >= one_level_threshold) {
+        1
+      }
     }
   
   
-  return(list(
-    RoB_avg = unname(weighted_average),
-    levels = downgrade_levels
-  ))
+  return(downgrade_levels)
   
 }
