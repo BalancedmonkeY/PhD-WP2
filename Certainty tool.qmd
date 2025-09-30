@@ -9,7 +9,7 @@ This document is to go over the details of the certainty tool part of the update
 
 # Datasets
 
-For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 7 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, so will simplify data curation. Multiple outcomes were extracted to gain more data.
+For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 12 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, which will simplify data collection. Multiple outcomes were extracted to gain more data. For each outcome, the meta-analysis study data was extracted as well as how many levels the evidence was downgraded for each GRADE domain (i.e., 0, 1, or 2).
 
 ## [Antibiotics COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015025/full "Cochrane website")
 
@@ -27,19 +27,21 @@ Below outcomes are from October 2021 version regarding inpatients with confirmed
 
 ## [Chronic rhinosinusitis](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013513.pub3/full "Cochrane website")
 
--   Outcome of health-related quality of life - disease-specific (SNOT-22, range 0 to 110, lower = better) for dupilimab versus placebo. In the March 2021 version, this estimate was based on 3 studies. This was the same across versions.
+Below are outcomes from the March 2021 version (as studies were the same in earlier versions), for the dupilimab versus placebo comparison.
 
--   Outcome of disease severity - VAS (range 0 to 10, lower = better) for dupilimab versus placebo. In March 2021 version, this estimate was based on 3 studies. This was the same across versions.
+-   Health-related quality of life - disease-specific (SNOT-22, range 0 to 110, lower = better) based on 3 studies.
 
--   Outcome of serious adverse events (duplimab vs placebo). In March 2021, this was based on 3 studies. This was the same across versions.
+-   Disease severity - VAS (range 0 to 10, lower = better) based on 3 studies.
 
--   Outcome of avoidance of surgery (duplimab vs placebo). In March 2021, this was based on 2 studies. This was the same across versions.
+-   Serious adverse events based on 3 studies.
 
--   Outcome of adverse events (duplimab vs placebo). In March 2021, this was based on 3 studies. This was the same across versions.
+-   Avoidance of surgery based on 2 studies.
+
+-   Adverse events based on 3 studies.
 
 ## [Colchicine COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015045/full "Cochrane website")
 
-Below outcomes are for hospitalised patients with COVID-19 and moderate to severe disease. Number of studies are as off October 2021.
+Below outcomes are for hospitalised patients with COVID-19 and moderate to severe disease. Number of studies are as of October 2021.
 
 -   All-cause mortality at day 28 based on 2 studies.
 
@@ -47,15 +49,17 @@ Below outcomes are for hospitalised patients with COVID-19 and moderate to sever
 
 ## [Convalescent plasma COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013600.pub6/full "Cochrane website")
 
--   Outcome of all-cause mortality at up to day 28, for convalescent plasma vs placebo or standard care in those with moderate to severe disease. In the May 2023 (and February 2023) version, this estimate was based on 21 RCTs. In the May 2021 version, the estimate was based on 7 RCTs. In earlier versions, the outcomes were not the exact same.
+Below outcomes are for convalescent plasma vs placebo or standard care in those with moderate to severe disease.
 
--   Outcome of clinical worsening at up to day 28. In the May 2023 (and February 2023) version, this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
+-   All-cause mortality at up to day 28. In the May 2023 (and February 2023) version, this estimate was based on 21 RCTs. In the May 2021 version, the estimate was based on 7 RCTs. In earlier versions, the outcomes were not the exact same.
 
--   Outcome of clinical improvement at up to day 28. In the May 2023 (and February 2023) version, this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
+-   Clinical worsening at up to day 28. In the May 2023 (and February 2023) version, this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
--   Outcome of grades 3 and 4 adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In May 2021, this was based on 4 RCTs. In earlier versions, the outcomes were not the exact same. When looking at the May/February 2023 versions, it is not clear which studies were included; in the text it mentions the study Avendano-Sola 2021, but in the forest plots it mentions AlQahtani 2021. For this reason, we are not including these results.
+-   Clinical improvement at up to day 28. In the May 2023 (and February 2023) version, this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
--   Outcome of serious adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
+-   Grades 3 and 4 adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In May 2021, this was based on 4 RCTs. In earlier versions, the outcomes were not the exact same. When looking at the May/February 2023 versions, it is not clear which studies were included; in the text it mentions the study Avendano-Sola 2021, but in the forest plots it mentions AlQahtani 2021. For this reason, we are not including these results.
+
+-   Serious adverse events up to day 28. In May 2023 (and February 2023), this was based on 6 RCTs. In earlier versions, the outcomes were not the exact same.
 
 ## [Fluvoxamine COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015391/full "Cochrane website")
 
@@ -71,33 +75,39 @@ The below outcomes are for September 2022 version.
 
 ## [Inhaled corticosteroids COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015125/full "Cochrane website")
 
--   All-cause mortality (up to 30 days). As of March 2022, this was based on 3 studies.
+The below outcomes are from March 2022.
 
--   Admission to hospital or death (up to 30 days). As of March 2022, this was based on 2 studies.
+-   All-cause mortality (up to 30 days) based on 3 studies.
 
--   Symptom resolution (all initial symptoms resolves at day 14). As of March 2022, this was based on 2 studies.
+-   Admission to hospital or death (up to 30 days) based on 2 studies.
+
+-   Symptom resolution (all initial symptoms resolves at day 14) based on 2 studies.
 
 ## [Ivermectin COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015017.pub3 "Cochrane website")
 
--   Outcome of all-cause mortality at day 28, for those in inpatient settings with moderate to severe disease. In the June 2022 version, the estimate was based on 3 RCTs. In the July 2021 version, it was based on 2 RCTs.
+Below outcomes are for those in inpatient settings with moderate to severe disease.
 
--   Outcome of serious adverse events (under same settings as above). In the June 2022 version, this was based on 2 RCTs. This outcome was not present in earlier versions.
+-   All-cause mortality at day 28. In the June 2022 version, the estimate was based on 3 RCTs. In the July 2021 version, it was based on 2 RCTs.
 
--   Outcome of any adverse events (same settings). In June 2022, this was based on 3 RCTs. In July 2021, this was based on 1 RCT.
+-   Serious adverse events. In the June 2022 version, this was based on 2 RCTs. This outcome was not present in earlier versions.
 
--   Outcome of viral clearance at 7 days. In June 2022, this was based on 3 RCTS. In earlier versions, the outcome was not the exact same definition.
+-   Any adverse events. In June 2022, this was based on 3 RCTs. In July 2021, this was based on 1 RCT.
+
+-   Viral clearance at 7 days. In June 2022, this was based on 3 RCTS. In earlier versions, the outcome was not the exact same definition.
 
 ## [Janus kinase inhibitors COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015209/full "Cochrane website")
 
--   All-cause mortality (up to day 28). As of June 2022, this was based on 6 RCTs.
+Outcomes for June 2022 version.
 
--   All-cause mortality (up to day 60). As of June 2022, this was based on 2 RCTs.
+-   All-cause mortality (up to day 28) based on 6 RCTs.
 
--   Adverse events (any grade). As of June 2022, this was based on 3 RCTs.
+-   All-cause mortality (up to day 60) based on 2 RCTs.
 
--   Serious adverse events. As of June 2022, this was based on 4 RCTs.
+-   Adverse events (any grade) based on 3 RCTs.
 
--   Secondary infection. As of June 2022, this was based on 4 RCTs.
+-   Serious adverse events based on 4 RCTs.
+
+-   Secondary infection based on 4 RCTs.
 
 ## [Non-small cell lung cancer](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013257.pub3 "Cochrane website")
 
@@ -119,17 +129,21 @@ Looking at VKA compared to no prophylaxis
 
 ## [Remdesivir COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014962.pub2/full "Cochrane website")
 
--   Outcome of all-cause mortality up to day 28 for individuals with moderate to severe COVID-19. In January 2023 (and August 2021), this was based on 4 RCTs.
+Below outcomes are for individuals with moderate to severe COVID-19.
 
--   Outcome of adverse events (any grade) up to day 28. In January 2023, this was based on 4 RCTs. In August 2021, this was based on 3 RCTs.
+-   All-cause mortality up to day 28. In January 2023 (and August 2021), this was based on 4 RCTs.
 
--   Outcome of serious adverse events up to day 28. In January 2023, this was based on 4 RCTs. In August 2021, this was based on 3 RCTs.
+-   Adverse events (any grade) up to day 28. In January 2023, this was based on 4 RCTs. In August 2021, this was based on 3 RCTs.
+
+-   Serious adverse events up to day 28. In January 2023, this was based on 4 RCTs. In August 2021, this was based on 3 RCTs.
 
 ## [Systemic corticosteroids COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014963.pub2/full "Cochrane website")
 
--   Outcome of all-cause mortality up to day 30 for corticosteroids plus standard care vs standard care (plus/minus placebo). In November 2022, this was based on 10 RCTs. The outcome for August 2021 was split differently, and so can't compare.
+Below outcomes are for corticosteroids plus standard care vs standard care (plus/minus placebo).
 
--   Outcome of all-cause mortality up to day 120 (same settings as above). In November 2022, this was based on 3 RCTs. The outcome for August 2021 was split differently, and so can't compare.
+-   All-cause mortality up to day 30. In November 2022, this was based on 10 RCTs. The outcome for August 2021 was split differently, and so can't compare.
+
+-   All-cause mortality up to day 120. In November 2022, this was based on 3 RCTs. The outcome for August 2021 was split differently, and so can't compare.
 
 # Risk of Bias
 
@@ -141,7 +155,9 @@ The risk of bias data should ideally have been completed by the time researchers
 
 These two key factors - defined by Cochrane - decide whether to downgrade the results, and by how many levels. However, the Cochrane advice doesn't give specifics to these factors (e.g., uses phrases such as 'most information', rather than a specific proportion).
 
-## Proportion of information
+## Cochrane guidance
+
+### Proportion of information
 
 The three broad categories are:
 
@@ -151,55 +167,47 @@ The three broad categories are:
 
 3.  Proportion of information from studies at high risk of bias is sufficient to affect the interpretation of results
 
-I need to add values to these three categories, in terms of the proportion of studies with low, unclear, and high risk of bias. To do this, I will look through various Cochrane reviews and make estimates based on these (plus some leeway to avoid false negatives).
-
-The resulting function will have an option to amend the threshold values if researchers have strong reasoning linked with specifics related to their research.
-
-## Likely to alter results
+### Likely to alter results
 
 Within category (2) above, it is further split into:
 
--   Plausible bias will **unlikely** seriously alter the results
+-   Plausible bias will **unlikely** seriously alter the results -\> no downgrading
 
--   Plausible bias will **likely** seriously alter the results
+-   Plausible bias will **likely** seriously alter the results -\> downgrade one level
 
 Within category (3) above, it is further split into:
 
--   Crucial risk likely to **seriously** alter the results
+-   Crucial risk likely to **seriously** alter the results -\> downgrade one level
 
--   Crucial risk likely to **very seriously** alter the results
-
-To ascertain whether the identified bias in the studies will alter the results, a sensitivity analysis will be conducted by removing those studies with plausible/crucial risk. As in the above section, I will look through various Cochrane reviews to make estimates on what alteration to results would be classed as unlikely/likely and seriously/very seriously. Again, the resulting function will have an option to amend the threshold values if required.
-
-::: callout-tip
-## Idea
-
-The interpretation tool could be utilised when decided what is a significant alteration in the results. Specifically by looking at **removal** of studies, rather than **addition** of new studies.
-:::
+-   Crucial risk likely to **very seriously** alter the results -\> downgrade two levels
 
 ## Risk of Bias tools
 
-Differences between ROB1 and RoB2 (which both feature in threshold datasets). Whilst RoB 2 is the later version and thus recommended, it is a lot more time consuming - as such, many researchers still stick with RoB 1. Therefore, it would be ideal if the certainty tool could function regardless of which RoB tool was used.
+There are differences between ROB1 and RoB2 (which both feature in the datasets). Whilst RoB 2 is the later version and thus recommended, it is a lot more time consuming - as such, many researchers still stick with RoB 1. Therefore, it would be ideal if the certainty tool could (technically) function regardless of which RoB tool was used.
 
-In the Cochrane data/reports, when RoB 1 tool was used, and overall rating doesn't appear to be calculated. When this is the case, we can use Stewart et al's probability matrices to give an overall rating that can be used (as RoB 2 gives an overall rating). Note - in the overall probability matrix for risk of bias, for some reason there aren't rows for when 'Other' could be classified as 'unclear'. Therefore, in such cases, we've made the assumption that 'unclear' holds the same significance as if it was rated as 'high' (especially given that Stewart's network appeared to be 'optimistic' than Cochrane, and researchers have indicated that they wish for more false positives, than false negatives.
+In the Cochrane data/reports, when RoB 1 tool was used an overall rating doesn't appear to be calculated. When this is the case, we can use Stewart et al's probability matrices to give an overall rating that can be used (as RoB 2 gives an overall rating). Note - in the overall probability matrix for risk of bias, for some reason there aren't rows for when 'Other' could be classified as 'unclear'. Therefore, in such cases, we've made the assumption that 'unclear' holds the same significance as if it was rated as 'high' (especially given that Stewart's network appeared to be more 'optimistic' than Cochrane, and researchers have indicated that they wish for more false positives, than false negatives).
 
 ::: callout-note
 ## Different results
 
-The developed tool may behave differently depending on the Risk of Bias tool that was used. Often, the ROB1 tool was reported across all outcomes, and the overall rating is having to be calculated. This may be missing important factors that are only specific to certain outcomes (see chronic rhinosinusitis example). Either the tool only gets used on ROB2 datasets, or it comes with a warning if using ROB1, and maybe the 'adjustment factor' idea can 'fix' these cases.
+The developed tool may behave differently depending on the Risk of Bias tool that was used. Often, the ROB1 tool was used across all outcomes (rather than individually), and the overall rating for each study is having to be calculated. Therefore, the resulting overall RoBs may be missing important factors that are only specific to certain outcomes (see where chronic rhinosinusitis example is looked at further in section @sec-downgraded-1-level-but-score-of-less-than-1.5). Either the tool only gets used on ROB2 datasets, or it comes with a warning if using ROB1, and maybe the 'adjustment factor' idea can 'fix' these cases.
 :::
 
-## Dialling in thresholds
+## Design of RoB element
 
-I've created a function that calculated the weighted average risk of bias, based on the meta-analytic weights used. There's potential that this could encompass both elements mentioned above (as a high risk study that gives a small weight is unlikely to change the results (depending on how different the estimate is from the pooled result)).
+I've created a function that calculates the weighted average risk of bias, based on the meta-analytic weights used and the overall risk of bias for each study (with respect to the specific outcome where possible). Calculating a weighted average may take into account both of the guidance elements mentioned above (as a high risk study that gives a small weight is unlikely to change the results (depending on how different the estimate is from the pooled result)).
 
-Let's see what the average RoB is for each of our datasets.
+Let's see what the weighted average RoB is for each of our datasets.
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, output = FALSE}
 library(dplyr)
 library(purrr)
 library(knitr)
+library(kableExtra)
 source("RoB_downgrades.R")
+```
+
+```{r, echo = FALSE}
 
 # Read in info from all datasets
 primary_data <- readxl::read_excel("Datasets/primary_info.xlsx", sheet = "Studies")
@@ -232,32 +240,32 @@ GRADE_results$RoB_avg <- mapply(function(review_type, version_date, outcome, Rob
 GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Rob_tool)
 
 # Display results
-kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Rob_tool", "Downgrade RoB", "RoB_avg")) %>% arrange(RoB_avg), digits = 2)
+knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Rob_tool", "Downgrade RoB", "RoB_avg")) %>% arrange(RoB_avg), digits = 2)
 ```
 
 From the above, one can see that at a weighted average RoB score of 1.5, the reviews started getting downgraded by 1 level. None of the example datasets downgraded by two levels for risk of bias, yet some did have the maximum weighted average RoB score of 3.
 
 ::: callout-important
-## Proposed thresholds
+## Proposed threshold
 
 Based on the current data, a basic default threshold would be that when the weighted average RoB score is:
 
 -   Greater than or equal to 1.5 - downgrade by one level
 
--   Greater than or equal to 2.75 - downgrade by two levels
+-   When to downgrade two levels is less simple and explored further below
 :::
 
 In the next sections, I'm going to investigate a bit further the studies that didn't quite follow the general pattern to see if there is anything else quantifiable that can be used to 'fine-tune' the tool.
 
-### Downgraded 1 level, but score of less than 1.5
+### Downgraded 1 level, but score of less than 1.5 {#sec-downgraded-1-level-but-score-of-less-than-1.5}
 
 In the chronic rhinosinusitis dataset, for outcomes VAS (disease severity) and avoidance of surgery, the weighted average RoB score was 1 (the lowest possible), yet the authors downgraded the evidence by one level for risk of bias. Note that they used the RoB 1 tool, and assessed it across all outcomes.
 
-For VAS, this was due to "study limitations: methods or criteria used in the measurement of the outcome were not validated". In the risk of bias table that is available, the only related information I can find is within the 'selective reporting' that there was some lack of clarity regarding the choice of measurement tool and that for VAS, outcome was not pre-specified in the original trial registry data. This led to an overall rating of 'Unclear risk' for all 3 studies.
+For VAS, this was due to "s*tudy limitations: methods or criteria used in the measurement of the outcome were not validated*". In the risk of bias table that is available, the only related information I can find is within the 'selective reporting' field, that there was some lack of clarity regarding the choice of measurement tool, and that for VAS specifically, the outcome was not pre-specified in the original trial registry data. This led to an overall rating of 'Unclear risk' for all 3 studies (note, across all outcomes).
 
-For avoidance of surgery, this was due to "serious limitations: the criteria used for requiring/not requiring 'rescue surgery' were unclear". This is similar to the above outcome, in that 'lack of clarity' is mentioned. Specifically, the number of participants who required surgery was missing. As above, this led to an overall rating of 'Unclear' risk for all 3 studies.
+For avoidance of surgery, this was due to "*serious limitations: the criteria used for requiring/not requiring 'rescue surgery' were unclear*". This is similar to the above outcome, in that 'lack of clarity' is mentioned. Specifically, the number of participants who required surgery was missing. As above, this led to an overall rating of 'Unclear' risk for all 3 studies.
 
-As the researchers didn't give an overall risk of bias, the function had to estimate it, and it put all 3 studies as most likely being 'low risk' (note, with 100% probability according to Stewart et. al.).
+As the researchers didn't give an overall risk of bias, my function had to estimate it, and it put all 3 studies as most likely being 'low risk' (note, with 100% probability according to Stewart et. al.'s network).
 
 #### What does this mean?
 
@@ -271,19 +279,19 @@ My suggestion is therefore to say that this tool will not perform as well if RoB
 
 ### Didn't downgrade, but score of more than 1.5
 
-In the convalescent plasma dataset, for outcomes serious adverse events a weighted average RoB score of 1.79 was given respectively for the Feburary 2023 version (which was the same studies in May 2023). In the oral anticoagulation dataset, for outcomes mortality at 6 months and 12 months, a weighted average RoB score of 2.88 and 2.66 was given. Yet for these four outcomes, the researchers did not downgrade the evidence regarding risk of bias.
+In the convalescent plasma dataset, for serious adverse events a weighted average RoB score of 1.79 was given for the Feburary 2023 version (which was the same studies in May 2023). In the oral anticoagulation dataset, for outcomes mortality at 6 months and 12 months, a weighted average RoB score of 2.88 and 2.66 was given respectively. Yet for these three outcomes, the researchers did not downgrade the evidence regarding risk of bias.
 
 For serious adverse events in the convalescent plasma dataset, most of the studies were of 'some concerns'. The RoB score for serious adverse events of 1.79 not matching up with downgrading isn't of huge concern and could be categorised as being down to 'difference of opinion' on their significance.
 
-For the mortality outcomes in the oral anticoagulation dataset, the researchers stated that there was "some concern with risk of bias associated with unclear allocation concealment, taken into account when downgrading from high to moderate certainty". For both outcomes, the GRADE rating was 'Moderate', downgraded by one level due to serious imprecision. It would seem that the researchers felt this downgrading incorporated the concerns regarding risk of bias, and so no further downgrading was required.
+For the mortality outcomes in the oral anticoagulation dataset, the researchers stated that there was "*some concern with risk of bias associated with unclear allocation concealment, taken into account when downgrading from high to moderate certainty*". For both outcomes, the GRADE rating was 'Moderate', downgraded by one level due to serious imprecision. It would seem that the researchers felt this downgrading incorporated the concerns regarding risk of bias, and so no further downgrading was required.
 
 #### What does this mean?
 
 Both scenarios could be corrected with the adjustment factor being proposed below. For convalescent plasma, the 'difference of opinions' between the default settings and the researchers could be adjusted by changing the threshold (going from 1.5 to 1.8 wouldn't be a huge adjustment). For oral coagulation, the researchers are clearly doing their own thing regarding risk of bias, which they can account for by changing the threshold for downgrading (again) due to risk of bias to a much higher value.
 
-### Downgraded only 1 level, but score of more than 2.75
+### Downgraded only 1 level, but score of 3
 
-There were five instances where all studies have overall high risk of bias, yet the review team only downgraded the evidence by one level due to risk of bias (Colchicine COVID-19 - mortality and worsening; inhaled corticosteroids COVID-19 - symptom resolution; fluvoxamine COVID-19 - serious adverse effects and any adverse effects). The guidelines for downgrading for two levels has the additional factor than any crucial risk identified needs to also likely to very seriously alter the results. The standard way to assessing this would be to conduct a sensitivity analysis, removing the studies that had high risk of bias. However, in the case where all studies were deemed to be high risk (such as these five examples), this would result in no effect estimate being available, and therefore, no comparison available.
+There were five instances where all studies have overall high risk of bias, yet the review team only downgraded the evidence by one level due to risk of bias (Colchicine COVID-19 - mortality and worsening; inhaled corticosteroids COVID-19 - symptom resolution; fluvoxamine COVID-19 - serious adverse effects and any adverse effects). The guidelines for downgrading for two levels has the additional factor than any crucial risk identified needs to also likely very seriously alter the results. The standard way to assess this would be to conduct a sensitivity analysis, removing the studies that had high risk of bias. However, in the case where all studies were deemed to be high risk (such as these five examples), this would result in no effect estimate being available, and therefore, no comparison available.
 
 #### What does this mean?
 
@@ -292,11 +300,13 @@ I get the feeling that is is *very* rare for the evidence to be downgraded by tw
 ::: callout-important
 ## Default second threshold
 
-Therefore, I think it would be useful to have an option in the tool so state that there is only one threshold (i.e., for downgrading one level), and for that option to be the default.
+Therefore, I think it would be useful to have an option in the tool to state that there is **only one threshold** (i.e., for downgrading one level), and for that option to be the default. If reviewers wish to, they can change this themselves and add a second threshold (that they define) for when to downgrade two levels.
 :::
 
 ### Adjustment factor {#sec-adjustment-factor}
 
-So far, the idea of an adjustment factor seems sensible as, with the current approach, some research teams downgrade based on risk of bias due to a different thresholds/criteria (see sections above); the data collected did not give a straight relationship with the weighted average RoB.
+So far, the idea of an adjustment factor seems sensible as, with the current approach, some research teams downgrade based on risk of bias due to different thresholds/criteria (see sections above); the data collected did not give a straight relationship with the weighted average RoB.
 
-A first approach to this, that is very rudimentary, is to move the default threshold such that the weighted average RoB 'correctly' matches to the set levels the researchers downgraded the outcome for in the most recent version. The new thresholds are then used when considering the review with new studies. This way, it'll be focusing on the likely change from the addition of new studies, rather than a change due to the differences between researchers judgement and tool defaults.
+A first approach to this, that is very rudimentary, is to move the default threshold such that the weighted average RoB 'correctly' matches to the set levels the researchers downgraded the outcome for in the most recent version. The new thresholds are then used when considering the review with new studies. This can be thought of as 'calibrating' the tool to the review, and so it'll be focusing on the [likely change]{.underline} from the addition of new studies, rather than a change due to the differences between researchers judgement and tool defaults.
+
+This has been added to the developed function(s) regarding risk of bias.
