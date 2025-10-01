@@ -56,7 +56,7 @@ The 95% confidence interval (CI) is denoted by
 
 $$\hat{\theta} \pm \Phi^{-1} (\frac{\alpha}{2}) \sqrt{var(\hat\theta)}$$ {#eq-ci}
 
-where $\hat\theta$ is the pooled effect estimate, $\alpha$ is the type I error rate (normally set at 0.5), $\Phi^{-1}$ is the inverse cumulative normal distribution with mean 0 and variance 1 (which ensures that $\Phi^{-1}(\alpha/2)$ maps an $\alpha$ value of 0.05 to the value of 1.96). $var(\hat\theta)$ is the variance of the pooled effect estimate.
+where $\hat\theta$ is the pooled effect estimate, $\alpha$ is the type I error rate (normally set at 0.05), $\Phi^{-1}$ is the inverse cumulative normal distribution with mean 0 and variance 1 (which ensures that $\Phi^{-1}(\alpha/2)$ maps an $\alpha$ value of 0.05 to the value of 1.96). $var(\hat\theta)$ is the variance of the pooled effect estimate.
 
 To create a threshold for statistical significance (specified by $\alpha$), we can specify that the lower or upper bound of the 95% CI needs to touch the null value, denoted by $\theta_0$.
 
@@ -114,9 +114,19 @@ Let
 
 $$w_{\bar{new}} = w_{n1} + w_{n2}$$ {#eq-weight-2studies}
 
-$$\hat\theta_{\bar{new}} = \frac{w_{n1}\hat\theta_{n1} + w_{n2}\hat\theta_{n2}}{w_{n1} + w_{n2}}$$ {#eq-theta-2studies} Substituting @eq-weight-2studies and @eq-theta-2studies into @eq-meta-theta-2studies and @eq-meta-variance-2studies brings us back to equations @eq-updated-estimate and @eq-updated-variance. Therefore, everything else follows through as before, but with new definitions for $w_{\bar{new}}$ and $\hat\theta_{\bar{new}}$.
+$$\hat\theta_{\bar{new}} = \frac{w_{n1}\hat\theta_{n1} + w_{n2}\hat\theta_{n2}}{w_{n1} + w_{n2}}$$ {#eq-theta-2studies} Substituting @eq-weight-2studies and @eq-theta-2studies into @eq-meta-theta-2studies and @eq-meta-variance-2studies gives us the following:
 
-#### Multiple new studies
+$$
+\hat\theta = \frac{\sum^{n}_{i=1}{w_i\hat\theta_i} + w_{\bar{new}}\hat\theta_{\bar{new}}}{\sum^n_{i=1}{w_i} + w_{\bar{new}}}
+$$
+
+$$
+var(\hat\theta) = \frac{1}{\sum^n_{i=1}{w_i} + w_{\bar{new}}}
+$$
+
+This is simply the same equations as equations @eq-updated-estimate and @eq-updated-variance. Therefore, everything else follows through as before, but with $w_{\bar{new}}$ and $\hat\theta_{\bar{new}}$ in place of $w_{new}$ and $\hat\theta_{new}$.
+
+#### Multiple new studies {#sec-multiple-new-studies-fixed}
 
 Where we are calculating the contour to $m$ new studies, the equations follow as if it was one new study, but $w_{new}$ and $\hat\theta_{new}$ are defined as
 
@@ -190,15 +200,15 @@ When working in the random-effects framework things get more complex as $\tau^2 
 
 Let's start again with only considering one new study and aiming for a meta-analysis with statistical significance at the $\alpha = 0.05$ level.
 
-Under a random-effects framework, the weight for each study is instead calculated as
+Under a random-effects framework, the weight for each study (including new studies) is instead calculated as
 
 $$
-w_i = \frac{1}{var(\hat\theta_i) + \tau^2}
+w_i = \frac{1}{var(\hat\theta_i) + \tau^2_{new}}
 $$ {#eq-random-weight}
 
-Unfortunately, $\tau^2$, the between-study heterogeneity which is calculated from all studies, is too complicated to estimate by hand, and so researchers often use established estimators instead, such as the DerSimonian-Laird estimator or Restricted Maximum Likelihood.
+where $\tau^2_{new}$ is the estimated between-study heterogeneity when included the new studies into the meta-analysis. Unfortunately, we can't simply plug the random-effects equation for weights into the contour equations derived for fixed effects (@eq-rearranged-theta-new) as $\tau^2_{new}$ depends on $\hat\theta_{new}$. Furthermore, we can't simply plug in an equation for $\tau^2_{new}$ and rearrange as calculating an estimate for between-study heterogeneity is too complicated to do by hand, and so researchers often use established estimators instead, such as the DerSimonian-Laird estimator or Restricted Maximum Likelihood. (Note the further challenge, that these commonly used estimators wouldn't allow us to incorporate the uncertainty in estimating between-study heterogeneity).
 
-As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, as per Langan et. al., the standard error-estimate plane is broken down into 'pixels', where $\tau^2$ is estimated at each pixel (calculated from the original studies as well as the new study represented by the pixel). For each pixel, $\tau^2$ value, $\hat\theta_{new}$, and $var(\hat\theta_{new})$ are plugged into the meta-analysis equations ( @eq-updated-estimate and @eq-updated-variance), but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed (i.e. whether 95% CI was one side of null effect). The result at each pixel is coloured according to whether the threshold was met. This easily extends to the clinical bound thresholds as well as the statistical significance.
+As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, as per Langan et. al., the standard error-estimate plane is broken down into 'pixels', where $\tau^2_{new}$ is estimated at each pixel (calculated from the original studies as well as the new study represented by the pixel). For each pixel, $\tau^2_{new}$, $\hat\theta_{new}$, and $var(\hat\theta_{new})$ are plugged into the meta-analysis equations ( @eq-updated-estimate and @eq-updated-variance), but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed (i.e. whether 95% CI was one side of null effect). The result at each pixel is coloured according to whether the threshold was met. This easily extends to the clinical bound thresholds as well as the statistical significance.
 
 ##### Example plot
 
@@ -216,31 +226,35 @@ result$threshold_plot
 
 ### Multiple new studies {#multiple-new-studies-1}
 
-Under the fixed-effects model, the weighted sum of the new studies became the point that visually represented whether the updated meta-analysis was in a certain zone (as created by the contours). This worked because the lack of between-study heterogeneity simplified the maths to weighted averages (see [Multiple new studies](#multiple-new-studies-1)).
+Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' of the new studies (as was done for fixed-effects) doesn't work for multiple reasons. Firstly, for each pixel, it is not possible to know what new studies created the 'average' represented by the respective point. Without knowing the new studies, the between-study heterogeneity can't be estimated. Secondly, different combinations of new studies could lead to the same 'average' effect size and standard error. It therefore follows that as there is no unique combination, there could be multiple different estimates of the between-study heterogeneity represented by a single pixel. To move forward, a compromise or assumption has to be made.
 
-Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' of the new studies doesn't work, as we cannot know from what new studies created the 'average' represented by the pixel. Furthermore, there would be no way of estimating $\tau^2$ without estimates of the new studies represented by the 'average'. For a single pixel representing the new studies 'average', without the new studies data, there could be multiple values of $\tau^2$.
+**Let's assume a constant** **between-study heterogeneity** **across all pixels in the plane.**
 
-**We have to assume a constant** $\tau^2$ **across all pixels in the plane.**
+The estimated between-study heterogeneity from the updated meta-analysis, $\tau^2_{new}$, is proposed as the common between-study heterogeneity across all pixels. Whilst this may be a strong assumption as you get to more 'extreme' pixels/values, the new studies 'average' would at least sit in the correct section of the plot (as per the fixed-effects).
 
-The estimated between-study heterogeneity from the updated meta-analysis is proposed as the common $\tau^2$ across all pixels. Whilst this may be a strong assumption as you get to more 'extreme' pixels/values, the new studies 'average' would at least sit in the correct section of the plot (as per the fixed-effects).
+::: callout-important
+## Plot addition
+
+To ensure that viewers are appropriately aware of the assumption, the plot needs to have a summary somewhere of how $\tau^2$ has changed due to the inclusion of the new studies (and if possible, it's uncertainty).
+:::
 
 The new studies 'average' that would be plotted (in addition to all the new studies) would be calculated as
 
-$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2}}}$$ {#eq-average-new-random} $$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2}$$ {#eq-average-new-var-random} where $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
+$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2_{new}}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2_{new}}}}$$ {#eq-average-new-random} $$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2_{new}}$$ {#eq-average-new-var-random} where $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
 
 As we're interested in how the 'average' new study (or contribution) impacts the updated meta-analysis, we need to consider the pooled estimate (and associated standard error/variance) in terms of the 'average' new study. The following equations satisfy this:
 
 $$
-\hat\theta = \sum^n_{i=1}{\frac{\hat\theta_i}{var(\hat\theta_i) + \tau^2}} + \frac{\hat\theta_{\bar{new}}}{var(\hat\theta_{\bar{new}})}
+\hat\theta = \sum^n_{i=1}{\frac{\hat\theta_i}{var(\hat\theta_i) + \tau^2_{new}}} + \frac{\hat\theta_{\bar{new}}}{var(\hat\theta_{\bar{new}})}
 $$ {#eq-pooled-est-random-multiple}
 
 $$
-var(\hat\theta) = 1/\sum^n_{i=1}{\frac{1}{var(\hat\theta_i) +\tau^2}} + \frac{1}{var(\hat\theta_{new})}
+var(\hat\theta) = 1/\sum^n_{i=1}{\frac{1}{var(\hat\theta_i) +\tau^2_{new}}} + \frac{1}{var(\hat\theta_{new})}
 $$ {#eq-pooled-se-random-multiple}
 
-Therefore, to build contours that show the effect of an 'average' new study, pixel by pixel, equations @eq-pooled-est-random-multiple and @eq-pooled-se-random-multiple are used, where $\hat\theta_{new}$ and $var(\hat\theta_{new})$ are substituted by the pixel values, and $\tau^2$ is the value from the updated meta-analysis. As per the scenario with one new study, each pixel is coloured according to whether the specified threshold was met. Note that $\tau^2$ is already incorporated into the pooled effect through equations @eq-average-new-random and @eq-average-new-var-random, which is why $\tau^2$ isn't needed in the latter elements of the equations above. This isn't needed for the fixed-effects model when considering multiple new studies due to how the weights are calculated, leading to simplified maths (i.e., weight is just the inverse of the variance).
+Therefore, to build contours that show the effect of an 'average' new study, pixel by pixel, @eq-pooled-est-random-multiple and @eq-pooled-se-random-multiple are used, where $\hat\theta_{new}$ and $var(\hat\theta_{new})$ are substituted by the pixel values, and $\tau^2_{new}$ is the value from the updated meta-analysis. As per the scenario with one new study, each pixel is coloured according to whether the specified threshold was met. Note that $\tau^2_{new}$ is already incorporated into the new contributions to the pooled effect through @eq-average-new-random and @eq-average-new-var-random, which is why $\tau^2_{new}$ isn't needed in the latter elements of the equations above. This isn't needed for the fixed-effects model when considering multiple new studies due to how the weights are calculated (i.e., weight is just the inverse of the variance, which is different for each study).
 
-A potential extension, depending on time and resources, could be to estimate $\tau^2$ at each pixel by simulating $m$ new studies. This decision depends on the balance between computational resource and improving the approximation of $\tau^2$. In the current scenario, I feel that the assumption above is satisfactory - but this may change depending on how the plot's use is extended.
+A potential extension, depending on time and resources, could be to estimate $\tau^2_{new}$ at each pixel by simulating $m$ new studies. This decision depends on the balance between computational resource and relaxing the assumption made regarding a fixed $\tau^2_{new}$ for all pixels. In the current scenario (i.e., being a visual aid), I feel that the assumption above is satisfactory - but this may change depending on how the plot's use is extended.
 
 ##### Example plot
 
@@ -255,6 +269,14 @@ result$threshold_result
 
 result$threshold_plot
 ```
+
+::: callout-important
+## Plot additions
+
+-   Dotted lines between the individual new studies and the overall 'average' new study (making a spider-like shape).
+
+-   Choose a different shape for the 'average' new study, as using a diamond confuses people that there may be something associated with the width of the diamond (as is the case for the pooled effects).
+:::
 
 ## Interesting comparisons
 
@@ -326,3 +348,11 @@ result_one$threshold_plot
 
 result_multiple$threshold_plot
 ```
+
+## Addressing assumption made for multiple studies in random-effects model
+
+Currently, due to the assumption about the between-study heterogeneity being fixed at each pixel to the updated meta-analysis value, some areas of the plot are 'far-fetched'. For example, in the final example shown above, the white region in the top left is white with one new study, because the between-study heterogeneity at that point would become so large, that the pooled effect wouldn't be significant. However, when considering multiple studies, because I've fixed the between-study heterogeneity (to a value that is potentially unrealistic), the weightings aren't as large, and so a 'significant' effect is appearing.
+
+***Is there a way to improve this assumption?***
+
+We've already discussed how it is not possible to get the exact estimates of between-study heterogeneity for each pixel when considering multiple studies. However, is there a way to account for the likely change in heterogeneity as we move further away from the 'average' new study point (for which the heterogeneity is currently fixed)?
