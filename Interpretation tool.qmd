@@ -356,3 +356,97 @@ Currently, due to the assumption about the between-study heterogeneity being fix
 ***Is there a way to improve this assumption?***
 
 We've already discussed how it is not possible to get the exact estimates of between-study heterogeneity for each pixel when considering multiple studies. However, is there a way to account for the likely change in heterogeneity as we move further away from the 'average' new study point (for which the heterogeneity is currently fixed)?
+
+In the appendix of Langan et. al., it shows how $\tau^2$ can be estimated using a method of moments approach:
+
+$$
+\hat\tau^2 = \frac{Q - n}{C}
+$$
+
+where Q is the test statistic in a standard test for heterogeneity, and C is a scaling factor \[Langan reference 23\]. Langan et. al. then show that for the combination of existing and new studies, Q and C can be written as
+
+$$
+Q = \sum^n_{i=1}w_i\hat\theta_i^2 + w_{new}\hat\theta^2_{new} - \frac{(\sum^n_{i=1}w_i\hat\theta_i + w_{new}\hat\theta_{new})^2}{\sum^n_{i=1}w_i + w_{new}}
+$$
+
+$$
+C = \sum^n_{i=1}w_i + w_{new} - \frac{\sum^n_{i=1}w_i^2 + w^2_{new}}{\sum^n_{i=1}w_i + w_{new}}
+$$
+
+Let's simplify the notation and group together terms relating to the current studies:
+
+$$
+V = \sum^n_{i=1}w_i^2, X = \sum^n_{i=1}w_i\hat\theta_i, Y = \sum^n_{i=1}w_i, Z = \sum^n_{i=1}w_i\hat\theta_i^2
+$$
+
+Then we get the following estimate of between-study heterogeneity
+
+$$
+\hat\tau^2 = \frac{Z + w_{new}\hat\theta^2_{new} - \frac{(X + w_{new}\hat\theta_{new})^2}{Y + w_{new}} - n}{Y + w_{new} - \frac{V + w^2_{new}}{Y + w_{new}}}
+$$ {#eq-tau2-estimate}
+
+where the weights of the studies (current and new) are the inverse variance, and $n$ is the number of current studies.
+
+This is the case for one new study and gives a good approximation for the between-study heterogeneity of the meta-analysis included the new study. How can this be extended to multiple new studies?
+
+The terms V, X, Y, and Z all stay the same as they are calculated from the existing studies. Currently, the plot is looking at each pixel as if it is representing $\hat\theta_{\bar{new}}$ and $w_{\bar{new}}$, and assuming $\tau^2_{new}$ to be constant across all pixels. The ideal scenario would be to extend @eq-tau2-estimate to multiple new studies, and rearrange to be in terms of $\hat\theta_{\bar{new}}$ and $w_{\bar{new}}$ (as we did with the fixed-effects scenario) to then get an estimate of $\tau^2$ at each pixel, however, this is not possible (due to the squared terms). Furthermore, currently each pixel represents the weight under the random-effects model (i.e., incorporates $\tau^2$, whereas in @eq-tau2-estimate, the weights are simply the inverse variances.
+
+There are two things that need sorting:
+
+1.  How to transform $w_{new}$ such that is represents $m$ new studies, rather than 1.
+
+2.  How do we represent new studies in the plot.
+
+Regarding the second point, as the contours are going to rely on $\tau^2$, and that is going to be estimated from @eq-tau2-estimate, to keep things visually cohesive, the 'average' new contribution is going to have to be a simple weighted average (i.e., not take $\tau^2$ into account). Note that this doesn't mean $\tau^2$ will be ignored when carrying out the meta-analysis at each pixel.
+
+To help with point 1, I first want to see how the estimate of $\tau^2$ differs between adding three new studies and adding one new study that is the combined (raw) results.
+
+```{r, echo = FALSE}
+# Create combined new study
+Fake.R1 <- sum(MAdata_bin_new_multiple$R.1)
+Fake.N1 <- sum(MAdata_bin_new_multiple$N.1)
+Fake.R2 <- sum(MAdata_bin_new_multiple$R.2)
+Fake.N2 <- sum(MAdata_bin_new_multiple$N.2)
+Fake.y <- as.numeric(metafor::escalc(measure = 'RR', ai = Fake.R1, n1i = Fake.N1, ci = Fake.R2, n2i = Fake.N2)[1])
+Fake.v <- as.numeric(metafor::escalc(measure = 'RR', ai = Fake.R1, n1i = Fake.N1, ci = Fake.R2, n2i = Fake.N2)[2])
+
+# Create V, X, Y, and Z
+MAdata_bin$wi <- 1/MAdata_bin$vi
+V <- sum(MAdata_bin$wi^2)
+X <- sum(MAdata_bin$wi * MAdata_bin$yi)
+Y <- sum(MAdata_bin$wi)
+Z <- sum(MAdata_bin$wi * MAdata_bin$yi^2)
+
+# Test estimate for one new study
+MAdata_bin_new$wi <- 1/MAdata_bin_new$vi
+tau2_one <- as.numeric((Z + MAdata_bin_new$wi * MAdata_bin_new$yi^2 - (X + MAdata_bin_new$wi * MAdata_bin_new$yi)^2/(Y + MAdata_bin_new$wi) - (6)) / (Y + MAdata_bin_new$wi - (V + MAdata_bin_new$wi^2)/(Y + MAdata_bin_new$wi)))
+updated_meta <- metafor::rma(yi = c(MAdata_bin$yi, MAdata_bin_new$yi), sei = c(MAdata_bin$sei, MAdata_bin_new$sei), method = "DL", measure = "RR")
+updated_tau2 <- updated_meta$tau2
+
+# tau2 estimate for three individual studies
+MAdata_bin_new_multiple$wi <- 1/MAdata_bin_new_multiple$vi
+tau2_ind <- (Z + sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi^2) - (X + sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi))^2/(Y + sum(MAdata_bin_new_multiple$wi)) - (6+2)) / (Y + sum(MAdata_bin_new_multiple$wi) - (V + sum(MAdata_bin_new_multiple$wi^2))/(Y + sum(MAdata_bin_new_multiple$wi)))
+
+#tau2 estimate as if one study
+Fake.w <- 1/Fake.v
+tau2_comb <- (Z + Fake.w * Fake.y^2 - (X + Fake.w * Fake.y)^2/(Y + Fake.w) - (6)) / (Y + Fake.w - (V + Fake.w^2)/(Y + Fake.w))
+# does it improve when we pretend its 3 new studies
+tau2_comb_adj1 <- (Z + Fake.w * Fake.y^2 - (X + Fake.w * Fake.y)^2/(Y + Fake.w) - (6+2)) / (Y + Fake.w - (V + Fake.w^2)/(Y + Fake.w))
+
+# Use weighted average instead of combining raw numbers?
+new_avg_est <- sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi) / sum(MAdata_bin_new_multiple$wi)
+new_avg_weight <- sum(MAdata_bin_new_multiple$wi)
+tau2_comb_adj2 <- (Z + new_avg_weight * new_avg_est^2 - (X + new_avg_weight * new_avg_est)^2/(Y + new_avg_weight) - (6)) / (Y + new_avg_weight - (V + new_avg_weight^2)/(Y + new_avg_weight))
+
+# true tau2 from adding new studies
+updated_meta <- metafor::rma(yi = c(MAdata_bin$yi, MAdata_bin_new_multiple$yi), sei = c(MAdata_bin$sei, MAdata_bin_new_multiple$sei), method = "DL", measure = "RR")
+updated_tau2 <- updated_meta$tau2
+```
+
+When adding our example three new studies, the estimated $\tau^2$ from metafor is `{r} round(updated_tau2, 3)`. For estimating $\tau^2$ using the method of moments equations, when the new studies were considered individually, $\tau^2$ was estimated to be `{r} round(tau2_ind, 3)`, which is a very close estimate to the estimated value from metafor. However, when the new studies were combined into one individual study, $\tau^2$ was estimated to be `{r} round(tau2_comb, 3)`, which is slightly off.
+
+The equation for estimating $\tau^2$ has a term for the number of studies in the meta-analysis. Naturally, when we add more new studies, this term increases by $m-1$, where $m$ is the number of new studies. When taking the combined study, but fixing the aforementioned term to reflect the 'true' number of new studies, we get an estimate of `{r} round(tau2_comb_adj1, 3)`, which is an improvement, but still not ideal.
+
+Instead of combining the new studies using the raw data, let's combine then by their weights - creating their own pooled effect. As we don't have an estimate of $\tau^2$, we'll just be using the inverse-variance as weights (as for the fixed-effects, and @eq-tau2-estimate). In this case, the estimate gives `{r} round(tau2_comb_adj2, 3)` (note that this doesn't include the adjustment regarding number of studies that was explored above). This is a pretty good estimate, and one I'd be happy to take to get better contours for the plot!
+
+So, at each pixel, we estimate $\tau^2_{new}$ using @eq-tau2-estimate, where each pixel represents the weighted average of the new studies (where weights are simply inverse-variances). We then plug the estimate into the meta-analysis command, and colour according to whether the pooled result gives the desired effect.
