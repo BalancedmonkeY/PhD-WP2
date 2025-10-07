@@ -192,6 +192,15 @@ InterpretationThreshold <- function(
   # random-effects model #
   if (method == "random")  {
     
+    # calculate tau2 adjustment factor K
+    # Create V, X, Y, and Z
+    size_current_fixed <- 1 / (seSS^2)
+    V <- sum(size_current_fixed^2)
+    X <- sum(size_current_fixed * SS)
+    Y <- sum(size_current_fixed)
+    Z <- sum(size_current_fixed * SS^2)
+    K <- updated_tau2 / ((Z + (new_avg_est^2/new_avg_se^2) - ((X + new_avg_est/new_avg_se^2)^2/(Y + 1/new_avg_se^2)) - (length(SS) + length(SSnew) - 1))/(Y + 1/new_avg_se^2 - ((V + 1/new_avg_se^4)/(Y + 1/new_avg_se^2))))
+    
     # optimised grid of all contour points
     contour_tiles <- expand.grid(i = seq_along(cSS), j = seq_along(csize))
     
@@ -206,10 +215,12 @@ InterpretationThreshold <- function(
           metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "random", conf.level = (1-sig_level))
           lc <- metacont$summary - ci*metacont$se.summary
           uc <- metacont$summary + ci*metacont$se.summary
-        # When there are multiple new studies, we have to make assumption that tau2 is constant across all pixels, and in terms of the 'average' new study contribution  
+        # When there are multiple new studies, we are estimating tau2 using method of moments and an adjustment factor  
         } else if (length(SSnew) > 1) {
-          sc_sum <- sum(size_current)
-          est <- (sum(size_current * SS) + cSS[i]/(csize[j]^2)) / (sc_sum + 1/(csize[j]^2))
+          tau2_est <- ((Z + (cSS[i]^2/csize[j]^2) - ((X + cSS[i]/csize[j]^2)^2/(Y + 1/csize[j]^2)) - (length(SS) + length(SSnew) - 1))/(Y + 1/csize[j]^2 - ((V + 1/csize[j]^4)/(Y + 1/csize[j]^2)))) * K
+          size_current_pixel <- 1 / ((seSS^2) + tau2_est)
+          sc_sum <- sum(size_current_pixel)
+          est <- (sum(size_current_pixel * SS) + cSS[i]/(csize[j]^2)) / (sc_sum + 1/(csize[j]^2))
           se <- sqrt(1/(sc_sum + 1/(csize[j]^2)))
           lc <- est - ci*se
           uc <- est + ci*se

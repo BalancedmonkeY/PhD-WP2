@@ -226,11 +226,9 @@ result$threshold_plot
 
 ### Multiple new studies {#multiple-new-studies-1}
 
-Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' of the new studies (as was done for fixed-effects) doesn't work for multiple reasons. Firstly, for each pixel, it is not possible to know what new studies created the 'average' represented by the respective point. Without knowing the new studies, the between-study heterogeneity can't be estimated. Secondly, different combinations of new studies could lead to the same 'average' effect size and standard error. It therefore follows that as there is no unique combination, there could be multiple different estimates of the between-study heterogeneity represented by a single pixel. To move forward, a compromise or assumption has to be made.
+Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' (using random-effects weightings) of the new studies (as was done for fixed-effects) doesn't work for multiple reasons. Firstly, for each pixel, it is not possible to know what new studies created the 'average' represented by the respective point. Without knowing the new studies, the between-study heterogeneity can't be estimated. Secondly, different combinations of new studies could lead to the same 'average' effect size and standard error. It therefore follows that as there is no unique combination, there could be multiple different estimates of the between-study heterogeneity represented by a single pixel. To move forward, a compromise or assumption has to be made.
 
-**Let's assume a constant** **between-study heterogeneity** **across all pixels in the plane.**
-
-The estimated between-study heterogeneity from the updated meta-analysis, $\tau^2_{new}$, is proposed as the common between-study heterogeneity across all pixels. Whilst this may be a strong assumption as you get to more 'extreme' pixels/values, the new studies 'average' would at least sit in the correct section of the plot (as per the fixed-effects).
+One idea is to assume a constant between-study heterogeneity across all pixels in the plane. If this idea was to be carried out, then the optimal choice for the common between-study heterogeneity across all pixels would be the updated meta-analysis, $\tau^2_{new}$. Whilst the new studies 'average' would at least sit in the correct section of the plot, this becomes a very strong assumption as you get to more 'extreme' pixels/values. This has a consequence on the contours created, as the further extreme you go in the plot, the between-study heterogeneity is likely being underestimated, and therefore being coloured 'incorrectly' as leading to significance, whereas such cases would be unlikely.
 
 ::: callout-important
 ## Plot addition
@@ -238,124 +236,66 @@ The estimated between-study heterogeneity from the updated meta-analysis, $\tau^
 To ensure that viewers are appropriately aware of the assumption, the plot needs to have a summary somewhere of how $\tau^2$ has changed due to the inclusion of the new studies (and if possible, it's uncertainty).
 :::
 
-The new studies 'average' that would be plotted (in addition to all the new studies) would be calculated as
+Another idea, that has less strong assumptions across the plot space is to consider the 'average' of the new studies, without taking into account the between-study heterogeneity, as the visual 'contribution'. As mentioned earlier, using random-weightings requires knowledge of $\tau^2$, but this isn't possible without knowing the exact 'layout' of the multiple new studies. If we remove the $\tau^2$ term, then things simplify.
 
-$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2_{new}}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2_{new}}}}$$ {#eq-average-new-random} $$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2_{new}}$$ {#eq-average-new-var-random} where $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
+Let's assume the visual contribution of the new studies (or 'average') that would be plotted (in addition to all the new studies) would be calculated as
 
-As we're interested in how the 'average' new study (or contribution) impacts the updated meta-analysis, we need to consider the pooled estimate (and associated standard error/variance) in terms of the 'average' new study. The following equations satisfy this:
+$$\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj})}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj})}}}$$ $$var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj})}$$ $m$ is the number of new studies and $\hat\theta_{nj}$ is the jth new study where $j = 1, ..., m$.
+
+This new 'average' study is then added to the meta-analysis in the same manner as when we were only considering one new study. How much of a difference does this make?
+
+```{r, echo = FALSE}
+# Create new average study as above
+MAdata_bin_new_multiple$wi <- 1/MAdata_bin_new_multiple$vi
+new_avg_est <- sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi) / sum(MAdata_bin_new_multiple$wi)
+new_avg_weight <- sum(MAdata_bin_new_multiple$wi)
+
+# Updated meta-analysis taking new studies separately
+updated_meta <- metafor::rma(yi = c(MAdata_bin$yi, MAdata_bin_new_multiple$yi), sei = c(MAdata_bin$sei, MAdata_bin_new_multiple$sei), method = "DL", measure = "RR")
+updated_meta
+
+# Updated meta-analysis taking new study as one combined (weighted)
+updated_meta_est <- metafor::rma(yi = c(MAdata_bin$yi, new_avg_est), vi = c(MAdata_bin$vi, 1/new_avg_weight), method = "DL", measure = "RR")
+updated_meta_est
+```
+
+When including the additional studies as they are, we get a (log)RR of `{r} round(updated_meta$beta, 3)` with 95% CI: `{r} round(updated_meta$ci.lb, 3)` to `{r} round(updated_meta$ci.ub, 3)`. Whereas when we make the additional studies into one new one based on inverse-variance weighting (without accounting for between-study heterogeneity), then the (log)RR is `{r} updated_meta_est$beta` with 95% CI: `{r} round(updated_meta_est$ci.lb, 3)` to `{r} round(updated_meta_est$ci.ub, 3)`. Even though the estimates of between-study heterogeneity were similar (`{r} round(updated_meta$tau2, 3)` vs `{r} round(updated_meta_est$tau2, 3)`), the confidence bound move from being statistically significant to non-significant. This would lend itself to the visual contribution point to not match the true update (i.e., it wouldn't sit in the coloured contour, but the updated meta-analysis diamond would indicate significance). So even though this method would be closer to the 'truth' across the plot than previously, it risks there containing conflicting visual elements, rendering the plot not a useful aid.
+
+Furthermore, it isn't possible to write the overall pooled effect (and associated standard error) in terms of this suggested formula for new 'average' study due to the $\tau^2$ term needing to be incorporating into each individual new study. I.e., if we treated the 'average' study as a single study (as is done when considering pixel by pixel), then
 
 $$
-\hat\theta = \sum^n_{i=1}{\frac{\hat\theta_i}{var(\hat\theta_i) + \tau^2_{new}}} + \frac{\hat\theta_{\bar{new}}}{var(\hat\theta_{\bar{new}})}
-$$ {#eq-pooled-est-random-multiple}
+var(\hat\theta) = 1/[\sum^n_{i=1}\frac{1}{var(\hat\theta_i) + \tau^2} + \frac{1}{var(\hat\theta_\bar{new}) + \tau^2}]
+$$
+
+but
 
 $$
-var(\hat\theta) = 1/\sum^n_{i=1}{\frac{1}{var(\hat\theta_i) +\tau^2_{new}}} + \frac{1}{var(\hat\theta_{new})}
-$$ {#eq-pooled-se-random-multiple}
+\frac{1}{var(\hat\theta_\bar{new})+\tau^2} = 1/[1/[\sum_{j=1}^m\frac{1}{var(\hat\theta_{nj})}] + \tau^2] \neq \sum_{j=1}^m\frac{1}{var(\hat\theta_{nj}) + \tau^2}
+$$
 
-Therefore, to build contours that show the effect of an 'average' new study, pixel by pixel, @eq-pooled-est-random-multiple and @eq-pooled-se-random-multiple are used, where $\hat\theta_{new}$ and $var(\hat\theta_{new})$ are substituted by the pixel values, and $\tau^2_{new}$ is the value from the updated meta-analysis. As per the scenario with one new study, each pixel is coloured according to whether the specified threshold was met. Note that $\tau^2_{new}$ is already incorporated into the new contributions to the pooled effect through @eq-average-new-random and @eq-average-new-var-random, which is why $\tau^2_{new}$ isn't needed in the latter elements of the equations above. This isn't needed for the fixed-effects model when considering multiple new studies due to how the weights are calculated (i.e., weight is just the inverse of the variance, which is different for each study).
+A third option fits 'in between' the first two options. Let us visualise the new contribution as the weighted average, taking into account the between-study heterogeneity (estimated from the updated meta-analysis, $\hat\tau^2_{new}$).
 
-A potential extension, depending on time and resources, could be to estimate $\tau^2_{new}$ at each pixel by simulating $m$ new studies. This decision depends on the balance between computational resource and relaxing the assumption made regarding a fixed $\tau^2_{new}$ for all pixels. In the current scenario (i.e., being a visual aid), I feel that the assumption above is satisfactory - but this may change depending on how the plot's use is extended.
+$$
+\hat\theta_{\bar{new}} = \frac{\sum^m_{j=1}{\frac{\hat\theta_{nj}}{var(\hat\theta_{nj}) + \tau^2_{new}}}}{\sum^m_{j=1}{\frac{1}{var(\hat\theta_{nj}) + \tau^2_{new}}}}
+$$ {#eq-average-new-random}
 
-##### Example plot
+$$
+var(\hat\theta_{\bar{new}}) = 1/\sum^m_{j=1}\frac{1}{var(\hat\theta_{nj}) + \tau^2_{new}}
+$$ {#eq-average-new-var-random}
 
-```{r, echo = FALSE, include = FALSE}
-result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
-  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.05)
-```
+Now let's consider each pixel on the plot. Each pixel is coloured according to the meta-analysis outcome which is derived from the pooled estimate and associated variance. When considering one new study (i.e., one new pixel), then we have the following equations (note that the $\tau^2$ term is excluded from the terms referring to new studies - this is because it's already incorporated in the 'average' values defined above):
 
-```{r, echo = FALSE, fig.width = 10}
-result$threshold_result
+$$
+\hat\theta = \frac{\sum^n_{i=1}{\frac{\hat\theta_i}{var(\hat\theta_i) + \tau^2}} + \frac{\hat\theta_{new}}{var(\hat\theta_{new})}}{\sum^n_{i=1}\frac{1}{var(\hat\theta_i) + \tau^2} + \frac{1}{var(\hat\theta_{new})}}
+$$ {#eq-pooled-est-random-new}
 
-result$threshold_plot
-```
+$$
+var(\hat\theta) = 1/\sum^n_{i=1}{\frac{1}{var(\hat\theta_i) +\tau^2}} + \frac{1}{var(\hat\theta_{new})}
+$$ {#eq-pooled-se-random-new}
 
-::: callout-important
-## Plot additions
+However, as described earlier, $\tau^2$ is calculated from the existing and new studies, but in this scenario, whilst we're looking at one pixel, each pixel is representing multiple new studies, for which a unique $\tau^2$ can not be calculated.
 
--   Dotted lines between the individual new studies and the overall 'average' new study (making a spider-like shape).
-
--   Choose a different shape for the 'average' new study, as using a diamond confuses people that there may be something associated with the width of the diamond (as is the case for the pooled effects).
-:::
-
-## Interesting comparisons
-
-### Fixed vs Random (One new study)
-
-```{r, echo = FALSE, include = FALSE}
-result_fixed <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.1)
-result_random <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
-```
-
-```{r, echo = FALSE, fig.width = 10}
-# | fig-cap: "One new study"
-# | fig-subcap:
-# |   - "Fixed-effects"
-# |   - "Random-effects"
-# | layout-nrow: 2
-
-result_fixed$threshold_plot
-
-result_random$threshold_plot
-```
-
-### Fixed vs Random (Multiple studies)
-
-```{r, echo = FALSE, include = FALSE}
-result_fixed <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
-  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.05)
-result_random <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
-  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.05, contour_points = 100)
-```
-
-```{r, echo = FALSE, fig.width = 10}
-# | fig-cap: "Multiple new studies"
-# | fig-subcap:
-# |   - "Fixed-effects"
-# |   - "Random-effects"
-# | layout-nrow: 2
-
-result_fixed$threshold_plot
-
-result_random$threshold_plot
-```
-
-### One vs multiple new studies (Random-effects)
-
-```{r, echo = FALSE, include = FALSE}
-result_one <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
-result_multiple <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
-  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
-  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
-```
-
-```{r, echo = FALSE, fig.width = 10}
-# | fig-cap: "Random-effects"
-# | fig-subcap:
-# |   - "One new study"
-# |   - "Multiple new studies"
-# | layout-nrow: 2
-
-result_one$threshold_plot
-
-result_multiple$threshold_plot
-```
-
-## Addressing assumption made for multiple studies in random-effects model
-
-Currently, due to the assumption about the between-study heterogeneity being fixed at each pixel to the updated meta-analysis value, some areas of the plot are 'far-fetched'. For example, in the final example shown above, the white region in the top left is white with one new study, because the between-study heterogeneity at that point would become so large, that the pooled effect wouldn't be significant. However, when considering multiple studies, because I've fixed the between-study heterogeneity (to a value that is potentially unrealistic), the weightings aren't as large, and so a 'significant' effect is appearing.
-
-***Is there a way to improve this assumption?***
-
-We've already discussed how it is not possible to get the exact estimates of between-study heterogeneity for each pixel when considering multiple studies. However, is there a way to account for the likely change in heterogeneity as we move further away from the 'average' new study point (for which the heterogeneity is currently fixed)?
+In the first suggestion, $\tau^2 = \tau^2_{new}$ for each pixel. However, as described earlier, this leads to ill-defined contours. This third option will give an individual estimate of $\tau^2$ for each pixel, derived below.
 
 In the appendix of Langan et. al., it shows how $\tau^2$ can be estimated using a method of moments approach:
 
@@ -379,7 +319,7 @@ $$
 V = \sum^n_{i=1}w_i^2, X = \sum^n_{i=1}w_i\hat\theta_i, Y = \sum^n_{i=1}w_i, Z = \sum^n_{i=1}w_i\hat\theta_i^2
 $$
 
-Then we get the following estimate of between-study heterogeneity
+noting here that $w_i$ is simply the inverse-variance (i.e., doesn't take into account any between-study heterogeneity, as that is what we're estimating). Then we get the following estimate of between-study heterogeneity
 
 $$
 \hat\tau^2 = \frac{Z + w_{new}\hat\theta^2_{new} - \frac{(X + w_{new}\hat\theta_{new})^2}{Y + w_{new}} - n}{Y + w_{new} - \frac{V + w^2_{new}}{Y + w_{new}}}
@@ -387,66 +327,120 @@ $$ {#eq-tau2-estimate}
 
 where the weights of the studies (current and new) are the inverse variance, and $n$ is the number of current studies.
 
-This is the case for one new study and gives a good approximation for the between-study heterogeneity of the meta-analysis included the new study. How can this be extended to multiple new studies?
+This is the case for one new study and gives a good approximation for the between-study heterogeneity of the meta-analysis including the new study. Unfortunately, when expanding @eq-tau2-estimate to consider multiple new studies, it can't be written it terms of $\hat\theta_{\bar{new}}$ and $w_{\bar{new}}$, as we did for the fixed effects scenario due to the squared terms. We also can't plug in the 'average' values, as those values include between-study heterogeneity - which is what is being estimated. However, varying @eq-tau2-estimate slightly, could give us a way to appropriately take into account between-study heterogeneity as we move further away from the 'average' new study that we do have data for.
 
-The terms V, X, Y, and Z all stay the same as they are calculated from the existing studies. Currently, the plot is looking at each pixel as if it is representing $\hat\theta_{\bar{new}}$ and $w_{\bar{new}}$, and assuming $\tau^2_{new}$ to be constant across all pixels. The ideal scenario would be to extend @eq-tau2-estimate to multiple new studies, and rearrange to be in terms of $\hat\theta_{\bar{new}}$ and $w_{\bar{new}}$ (as we did with the fixed-effects scenario) to then get an estimate of $\tau^2$ at each pixel, however, this is not possible (due to the squared terms). Furthermore, currently each pixel represents the weight under the random-effects model (i.e., incorporates $\tau^2$, whereas in @eq-tau2-estimate, the weights are simply the inverse variances.
+For each pixel, let $\tau^2$ be estimated with the below:
 
-There are two things that need sorting:
+$$
+\hat\tau^2 = \frac{Z + \frac{\hat\theta^2_{new}}{var(\hat\theta_{new})} - \frac{(X + \frac{\hat\theta_{new}}{var(\hat\theta_{new})})^2}{Y + \frac{1}{var(\hat\theta_{new})}} - (n+m-1)}{Y + \frac{1}{var(\hat\theta_{new})} - \frac{V + \frac{1}{var(\hat\theta_{new})^2}}{Y + \frac{1}{var(\hat\theta_{new})}}} * K
+$$ {#eq-tau2-estimate-adj}
 
-1.  How to transform $w_{new}$ such that is represents $m$ new studies, rather than 1.
+where $n$ and $m$ are the number of existing and new studies respectively (and so accounting for the fact that this is actually multiple new studies rather than 1). $K$ is calculated by substituting $\hat\tau^2$ with $\tau^2_{new}$, and $\hat\theta_{new}$ and $var(\hat\theta_{new})$ representing the 'average' new effect using @eq-pooled-est-random-new and @eq-pooled-se-random-new. Then $K$ is a scaling factor that ensures that at the co-ordinates that represent the 'average' new study, the pixel will be coloured according to meta-analysis results that are already known from including the new studies (and so marries up with the summary diamonds).
 
-2.  How do we represent new studies in the plot.
-
-Regarding the second point, as the contours are going to rely on $\tau^2$, and that is going to be estimated from @eq-tau2-estimate, to keep things visually cohesive, the 'average' new contribution is going to have to be a simple weighted average (i.e., not take $\tau^2$ into account). Note that this doesn't mean $\tau^2$ will be ignored when carrying out the meta-analysis at each pixel.
-
-To help with point 1, I first want to see how the estimate of $\tau^2$ differs between adding three new studies and adding one new study that is the combined (raw) results.
+Therefore, using @eq-tau2-estimate-adj essentially allows us to 'start' with the 'known' between-study heterogeneity estimate, and then adjust the between-study heterogeneity appropriately as we move further away from the 'average' new study.
 
 ```{r, echo = FALSE}
-# Create combined new study
-Fake.R1 <- sum(MAdata_bin_new_multiple$R.1)
-Fake.N1 <- sum(MAdata_bin_new_multiple$N.1)
-Fake.R2 <- sum(MAdata_bin_new_multiple$R.2)
-Fake.N2 <- sum(MAdata_bin_new_multiple$N.2)
-Fake.y <- as.numeric(metafor::escalc(measure = 'RR', ai = Fake.R1, n1i = Fake.N1, ci = Fake.R2, n2i = Fake.N2)[1])
-Fake.v <- as.numeric(metafor::escalc(measure = 'RR', ai = Fake.R1, n1i = Fake.N1, ci = Fake.R2, n2i = Fake.N2)[2])
+# Obtain tau2_new
+updated_meta <- metafor::rma(yi = c(MAdata_bin$yi, MAdata_bin_new_multiple$yi), sei = c(MAdata_bin$sei, MAdata_bin_new_multiple$sei), method = "DL", measure = "RR")
+updated_tau2 <- updated_meta$tau2
 
+# Obtain average new study effects
+MAdata_bin_new_multiple$wi <- 1/(MAdata_bin_new_multiple$vi + updated_tau2)
+new_avg_est <- sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi) / sum(MAdata_bin_new_multiple$wi)
+new_avg_var <- 1/sum(MAdata_bin_new_multiple$wi)
+
+# Calculate adjustment factor for this example
 # Create V, X, Y, and Z
 MAdata_bin$wi <- 1/MAdata_bin$vi
 V <- sum(MAdata_bin$wi^2)
 X <- sum(MAdata_bin$wi * MAdata_bin$yi)
 Y <- sum(MAdata_bin$wi)
 Z <- sum(MAdata_bin$wi * MAdata_bin$yi^2)
-
-# Test estimate for one new study
-MAdata_bin_new$wi <- 1/MAdata_bin_new$vi
-tau2_one <- as.numeric((Z + MAdata_bin_new$wi * MAdata_bin_new$yi^2 - (X + MAdata_bin_new$wi * MAdata_bin_new$yi)^2/(Y + MAdata_bin_new$wi) - (6)) / (Y + MAdata_bin_new$wi - (V + MAdata_bin_new$wi^2)/(Y + MAdata_bin_new$wi)))
-updated_meta <- metafor::rma(yi = c(MAdata_bin$yi, MAdata_bin_new$yi), sei = c(MAdata_bin$sei, MAdata_bin_new$sei), method = "DL", measure = "RR")
-updated_tau2 <- updated_meta$tau2
-
-# tau2 estimate for three individual studies
-MAdata_bin_new_multiple$wi <- 1/MAdata_bin_new_multiple$vi
-tau2_ind <- (Z + sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi^2) - (X + sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi))^2/(Y + sum(MAdata_bin_new_multiple$wi)) - (6+2)) / (Y + sum(MAdata_bin_new_multiple$wi) - (V + sum(MAdata_bin_new_multiple$wi^2))/(Y + sum(MAdata_bin_new_multiple$wi)))
-
-#tau2 estimate as if one study
-Fake.w <- 1/Fake.v
-tau2_comb <- (Z + Fake.w * Fake.y^2 - (X + Fake.w * Fake.y)^2/(Y + Fake.w) - (6)) / (Y + Fake.w - (V + Fake.w^2)/(Y + Fake.w))
-# does it improve when we pretend its 3 new studies
-tau2_comb_adj1 <- (Z + Fake.w * Fake.y^2 - (X + Fake.w * Fake.y)^2/(Y + Fake.w) - (6+2)) / (Y + Fake.w - (V + Fake.w^2)/(Y + Fake.w))
-
-# Use weighted average instead of combining raw numbers?
-new_avg_est <- sum(MAdata_bin_new_multiple$wi * MAdata_bin_new_multiple$yi) / sum(MAdata_bin_new_multiple$wi)
-new_avg_weight <- sum(MAdata_bin_new_multiple$wi)
-tau2_comb_adj2 <- (Z + new_avg_weight * new_avg_est^2 - (X + new_avg_weight * new_avg_est)^2/(Y + new_avg_weight) - (6)) / (Y + new_avg_weight - (V + new_avg_weight^2)/(Y + new_avg_weight))
-
-# true tau2 from adding new studies
-updated_meta <- metafor::rma(yi = c(MAdata_bin$yi, MAdata_bin_new_multiple$yi), sei = c(MAdata_bin$sei, MAdata_bin_new_multiple$sei), method = "DL", measure = "RR")
-updated_tau2 <- updated_meta$tau2
+# Calculate K
+K <- updated_tau2 / ((Z + (new_avg_est^2/new_avg_var) - ((X + new_avg_est/new_avg_var)^2/(Y + 1/new_avg_var)) - 8)/(Y + 1/new_avg_var - ((V + 1/new_avg_var^2)/(Y + 1/new_avg_var))))
 ```
 
-When adding our example three new studies, the estimated $\tau^2$ from metafor is `{r} round(updated_tau2, 3)`. For estimating $\tau^2$ using the method of moments equations, when the new studies were considered individually, $\tau^2$ was estimated to be `{r} round(tau2_ind, 3)`, which is a very close estimate to the estimated value from metafor. However, when the new studies were combined into one individual study, $\tau^2$ was estimated to be `{r} round(tau2_comb, 3)`, which is slightly off.
+In our example, $\tau^2_{new}$ is estimated as being `{r} round(updated_tau2, 3)` and the weighted average values (using this estimated between-study heterogeneity) $\theta_{\bar{new}}$ and $var(\hat\theta_{\bar{new}})$ are estimated to be `{r} round(new_avg_est, 3)` and `{r} round(new_avg_var, 3)`. Plugging these into equation @eq-tau2-estimate-adj, gives us an scaling factor of `{r} round(K, 3)`.
 
-The equation for estimating $\tau^2$ has a term for the number of studies in the meta-analysis. Naturally, when we add more new studies, this term increases by $m-1$, where $m$ is the number of new studies. When taking the combined study, but fixing the aforementioned term to reflect the 'true' number of new studies, we get an estimate of `{r} round(tau2_comb_adj1, 3)`, which is an improvement, but still not ideal.
+##### Example plot
 
-Instead of combining the new studies using the raw data, let's combine then by their weights - creating their own pooled effect. As we don't have an estimate of $\tau^2$, we'll just be using the inverse-variance as weights (as for the fixed-effects, and @eq-tau2-estimate). In this case, the estimate gives `{r} round(tau2_comb_adj2, 3)` (note that this doesn't include the adjustment regarding number of studies that was explored above). This is a pretty good estimate, and one I'd be happy to take to get better contours for the plot!
+One notices that with the example plot below, it behaves very differently to when considering one new study. This is because for multiple studies under a random-effects framework, the pixels are actually representing something slightly different - each pixel is already partially taking into account the estimated between-study heterogeneity. This is taken into account by removing the $\tau^2$ term from the new study elements of @eq-pooled-est-random-new and @eq-pooled-se-random-new, and it's this removal of $\tau^2$ that causes there to be differently coloured pixels compared to if only including one study. Essentially, when the viewer is considering other pixels away from the 'average' found from the new studies, they need to consider whether such a random-weighted average would likely exist (i.e., the colour represents the meta-analysis result *assuming* that the average of $m$ new studies, incorporating the estimated between-study heterogeneity, could sit at those pixel coordinates). Therefore, in this setting, the plot probably needs a warning to be careful when extracting far beyond the new data.
 
-So, at each pixel, we estimate $\tau^2_{new}$ using @eq-tau2-estimate, where each pixel represents the weighted average of the new studies (where weights are simply inverse-variances). We then plug the estimate into the meta-analysis command, and colour according to whether the pooled result gives the desired effect.
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
+Because the between-study heterogeneity depends on all the studies, the contours technically depend on the new studies that were found (whereas the contours are 'independent' of the new studies in the other plots). But how different would they be? Let's see the effect of a different set of three studies that show an opposite effect to previously.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = -MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
+The resulting plot is actually fairly similar, suggesting that it might not be as dangerous to extrapolate beyond the 'average' point as first anticipated.
+
+Lets see what happens when we have three new studies who, on their own, would have led to a non-significant result under a random-effects framework.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = c(log(0.26), log(0.5), log(0.35)), seSSnew = c(0.05, 0.05, 0.12),
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result$threshold_result
+
+result$threshold_plot
+```
+
+Two interesting things to note here. Firstly, whilst each of the new studies individually wouldn't have led to a significant result, having three in this extreme area does lead to statistical significance (likely because having multiple studies in this extreme area (rather than one) possibly reduces the between-study heterogeneity). Secondly, the weighted 'average' new study, is nowhere near the new studies on this plot - illustrating that under this interpretation of the pixels, pixels that are far away from the general 'crowd' of studies are unlikely to exist in practicality (especially the areas of small standard error, due to the presence of the between-study heterogeneity term).
+
+::: callout-important
+## Plot additions
+
+-   Dotted lines between the individual new studies and the overall 'average' new study (making a spider-like shape).
+
+-   Choose a different shape for the 'average' new study, as using a diamond confuses people that there may be something associated with the width of the diamond (as is the case for the pooled effects).
+:::
+
+## Compare each case
+
+```{r, echo = FALSE, include = FALSE}
+result_fixed_single <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.1)
+result_random_single <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
+result_fixed_mult <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, sig_level = 0.1)
+result_random_mult <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 100)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+result_fixed_single$threshold_plot + ggtitle("Fixed-effects with single new study")
+
+result_random_single$threshold_plot + ggtitle("Random-effects with single new study")
+
+result_fixed_mult$threshold_plot + ggtitle("Fixed-effects with multiple new studies")
+
+result_random_mult$threshold_plot + ggtitle("Random-effects with multiple new studies")
+```
