@@ -43,6 +43,7 @@ library(rmeta)
 #' @param new_points TRUE/FALSE add points of new study(ies) to plot
 #' @param points - TRUE/FALSE whether the study points should be displayed at all (TRUE default)
 #' @param pred_interval TRUE/FALSE display predictive interval along with the summary diamond
+#' @param tau2 TRUE/FALSE display tau2 values (TRUE default)
 #' @param rand.load TRUE/FALSE show percentage of computations complete when the random effects contours are calculated
 #' @return List containing the following: 
 #' threshold_result - a string containing a description of whether the threshold of the new analysis was met;
@@ -78,6 +79,7 @@ InterpretationThreshold <- function(
     new_points = TRUE,
     points = TRUE,
     pred_interval = FALSE,
+    tau2 = TRUE,
     rand_load = 100
 ) {
   
@@ -91,6 +93,7 @@ InterpretationThreshold <- function(
   
   #Calculate current meta-analysis (using rma from {metafor})
   current_meta <- metafor::rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "DL", "EE"), level = (1 - sig_level), measure = outcome)
+  current_tau2 <- current_meta$tau2
   
   #Calculate updated meta-analysis (using rma from {metafor})
   updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = ifelse(method == 'random', "DL", "EE"), level = (1 - sig_level), measure = outcome)
@@ -364,7 +367,7 @@ InterpretationThreshold <- function(
     legendmat.col.values <- c(legendmat.col.values, "new_point_avg_col" = "black")
     legendmat.col$labels[3] <- "New studies 'average'"
     legendmat.col$linetype[3] <- "blank"
-    legendmat.col$shape[3] <- 23
+    legendmat.col$shape[3] <- 24
     legendmat.col$color[3] <- "black"
     legendmat.col$fill[3] <- "lightblue"
   }
@@ -574,6 +577,25 @@ InterpretationThreshold <- function(
         geom_point(aes(color = "point_col"), shape = 19)
     }
     
+    if (new_points & length(SSnew) > 1) {
+      # Dashed lines connecting new study to 'average' point
+      lines_df <- data.frame(
+        x = SSnew,
+        xend = rep(new_avg_est, length(SSnew)),
+        y = seSSnew,
+        yend = rep(new_avg_se, length(seSSnew))
+      )
+      plot <- plot +
+        geom_segment(data = lines_df,
+                     aes(x = x, xend = xend, y = y, yend = yend),
+                     linetype = "dashed", color = "black", linewidth = 0.5)
+      # Average point
+      plot <- plot +
+        geom_point(data = data.frame(x = new_avg_est, y = new_avg_se),
+          aes(x = x, y = y, color = "new_point_avg_col"), 
+          shape = 24, fill = "lightblue", size = 3)
+    }
+    
     if (new_points) {
       plot <- plot +
         geom_point(data = data.frame(x = SSnew, y = seSSnew), 
@@ -581,11 +603,28 @@ InterpretationThreshold <- function(
                    shape = 21, fill = "lightblue")
     }
     
-    if (new_points & length(SSnew) > 1) {
-      plot <- plot +
-        geom_point(data = data.frame(x = new_avg_est, y = new_avg_se),
-          aes(x = x, y = y, color = "new_point_avg_col"), 
-          shape = 23, fill = "lightblue", size = 3)
+    #Tau2 display
+    if (tau2) {
+      if (method == 'random') {
+        tau2_label <- paste0(
+          "atop(", # atop() stacks the new lines
+          "Current~tau^2==", round(current_tau2, 3), ",",
+          "Updated~tau^2==", round(updated_tau2, 3),
+          ")"
+        )
+      
+        plot <- plot +
+          annotate(
+            geom = "label",
+            x = xlim[1] + 0.05 * (xlim[2] - xlim[1]),
+            y = ylim[2] - 0.85 * (ylim[2] - ylim[1]),
+            label = tau2_label,
+            parse = TRUE,
+            hjust = 0,
+            vjust = 1,
+            size = 3
+          )
+      }
     }
   
     # Add legend

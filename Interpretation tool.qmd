@@ -2,9 +2,16 @@
 title: "Interpretation Tool"
 format: docx
 editor: visual
+bibliography: references.bib
+csl: american-medical-association.csl
+number-sections: true
+crossref:
+  labels: arabic        
+  subref-labels: alpha a
+  chapters: true
 ---
 
-This document is to go over the details of the interpretation tool part of the update framework, which is based on the work by Langan et. al.
+This document is to go over the details of the interpretation tool part of the update framework, which is based on the work by Langan et. al.[@langan2012]
 
 ```{r setup, include = FALSE}
 
@@ -36,7 +43,145 @@ MAdata_bin_new$sei <- sqrt(MAdata_bin_new$vi)
 MAdata_bin_new_multiple$sei <- sqrt(MAdata_bin_new_multiple$vi)
 ```
 
-# Derivation of contours
+# Extended Langan plot
+
+The key element of the interpretation tool is that it will add any newly found studies and run an 'updated' meta-analysis and let the user know whether or not the new result gives a change in desired effect.
+
+To help users understand this impact of the new results, and the likelihood of further studies impacting the meta-analysis, the tool will also have a visual aid which is extended from the work by Langan et. al.[@langan2012]
+
+This section will introduce and describe the plot, the following section (@sec-derivation-of-contours) will go into more detail regarding how certain elements are calculated.
+
+## Basic elements
+
+The 'basic' plot, which is taken from Langan et. al.[@langan2012] is based on the standard error - effect estimate plane, which is often seen when assessing publication bias. The plot then has the following elements:
+
+1.  Points representing studies already in the latest meta-analysis
+
+2.  A line indicating a null effect (i.e., 1 for ratios, and 0 for differences)
+
+3.  A summary diamond representing the pooled effect of the latest meta-analysis. This is centred at the pooled effect estimate and has width representing the 95% (unless otherwise specified by the user) confidence interval.
+
+4.  Contour regions. These indicate the types of new studies (i.e., effect estimate and standard error) that would lead to the meta-analysis reaching a certain conclusion (e.g., statistical significance) as a result of its inclusion.
+
+In the example below (@fig-base-example), one can see:
+
+-   The existing meta-analysis is made up of 6 studies.
+
+-   The existing meta-analysis indicates a negative risk ratio, but not a statistically significant result (as the diamond crosses the line of no effect).
+
+-   Regions where a new study, once included, would lead to a statistically significant result for a negative risk ratio (medium gray) and a positive risk ratio (dark gray).
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 1, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+#| label: fig-base-example
+#| fig-cap: "Basic version of Langan plot"
+result$threshold_plot
+```
+
+## Extensions
+
+This work has extended the basic plot developed by Langan et. al.[@langan2012] in various ways to tailor it towards the aim of this interpretation tool.
+
+### Clinical significance
+
+Instead of considering statistical significance (which in this tool the user can also specify (e.g., set type I error rate to 10% rather than the standard 5%)), the tool and visual aid can also consider a user-specified clinical significance. To do this, the user simply enters one of the following:
+
+1.  A threshold for which the upper bound of the confidence interval needs to be smaller than (i.e., the entire confidence interval (represented by the diamond) needs to be to the left of the threshold value).
+
+2.  A threshold for which the lower bound of the confidence interval needs to be bigger than (i.e. the entire confidence interval (represented by the diamond) needs to be to the right of the threshold value).
+
+To visually make this assessment, instead of having the threshold value line at the line of null effect, it sits at the value specified by the user.
+
+In @fig-clinical-example below, we can see that the threshold value is set at RR of 0.9, and the user wants the pooled effect estimate to be significantly lower than that value - which is not the case here.
+
+One can also see that in these scenarios there is only one contour region (rather than two) as we're only interested in one 'direction'. Specifically, before we were interested in whether the effect was statistically significant in either direction (e.g., risk ratio greater than 1 or less than 1), but when considering clinical significance, one is only interested in one direction (e.g., risk ratio less than 0.9).
+
+The user specifies this setting by specifying `upper = 0.9` as the threshold is with respect to the upper bound of the confidence interval.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', upper = 0.9, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+#| label: fig-clinical-example
+#| fig-cap: "Extension to Langan plot by considering clinical significance"
+result$threshold_plot
+```
+
+### New studies are known
+
+The normal scenario for using this plot is for considering a hypothetical new study (as described by Langan et. al.[@langan2012], and utilised in the MetaImpact app[@nevill2025]). However, when we're considering updating a living systematic review, reviewers need help knowing whether the new studies that have been found through regular searches would lead to a significant change in the review as a consequence of their inclusion. In other words, where this interpretation tools fits into the update pathway leads to the new studies no longer being hypothetical when utilising this plot.
+
+As such, we can add the new studies onto the plot. In this section, we'll focus on one new additional study, @sec-multiple-new-studies-plot will consider multiple new studies. Whichever contour region the new study sits in should correspond to the outcome of the meta-analysis with its inclusion. For example, in @fig-studies-known-example the new study (light blue point) is sitting in the medium gray region, which corresponds with the updated meta-analysis producing a statistically significant result (RR \< 1).
+
+How do we know that the updated meta-analysis produced a statistically significant result? Well this has also been added to the plot. A light blue diamond represents the pooled results from conducting a meta-analysis including the new study. In the example below, we see that the entire diamond (where width represents the confidence interval) sits to the left of the threshold line (line of null effect) - indicating statistical significance.
+
+In this way, the plot contains two visual features to determine whether the updated meta-analysis meets the desired outcome:
+
+1.  Which contour regions the new study sits within
+
+2.  The position of the updated summary diamond with respect to the threshold line.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'fixed', outcome = 'RR', zero = 1)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+#| label: fig-studies-known-example
+#| fig-cap: "Extension to Langan plot incorporating that new study is known"
+result$threshold_plot
+```
+
+### Multiple new studies {#sec-multiple-new-studies-plot}
+
+This plot was originally designed for considering one new study, however, in living systematic reviews, we will likely want to consider multiple new studies (i.e., multiple studies that have been found through regular searching, but not yet incorporated into the analysis). @sec-multiple-new-studies-random will discuss how the contour derivations were extended to multiple studies, whilst this section will briefly talk about how multiple studies are viewed in the plot.
+
+All new studies are included in the plot the same way as with one new study - as light blue points. However, as the plot is only two-dimensional, we need a method for visualising the single impact of including all these new studies. As such, we need to also add a point that represents the 'average' new study or the 'average' contribution from the new studies. How the 'average' point is calculated in a the later section already mentioned. Visually, it is represented by a light blue triangle. To aid the view to see that each individual new study is incorporated by this 'average' study, dashed lines are added connected each point to the triangle.
+
+In @fig-multiple-studies-example below, one can see that whilst not every new study was within the light gray contour region, the 'average' study was, and that lines up with the updated meta-analysis becoming statistically significant.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new_multiple$yi, seSSnew = MAdata_bin_new_multiple$sei,
+  method = 'fixed', outcome = 'RR', zero = 1)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+#| label: fig-multiple-studies-example
+#| fig-cap: "Extension to Langan plot incorporating multiple new studies"
+result$threshold_plot
+```
+
+### Random effects and $\tau^2$
+
+Under a fixed-effects framework, the between-study heterogeneity parameter $\tau^2$ is set to zero; under a random-effects framework it is estimated from the data. If the users are wanting to use a random-effects model, the plot will then display the estimated value of $\tau^2$. This is additionally useful as the value will likely change when the analysis included the new study(ies), and so the reviewers should know how it has changed (see example plot below).
+
+Creating the contour regions cannot be done with with an equation defining the contours due to the fact that $\tau^2$ depends on the studies (further details in the @sec-random-effects). As the estimated value of $\tau^2$ in the updated meta-analysis directly feeds into the contour region creations (details in @sec-multiple-new-studies-random), it is even more important for the reviewer to be aware of how it changed when including the new studies. In @fig-random-example below one can see how the new study increased the between-study heterogeneity, and that if a study of more extreme results (i.e., smaller RR) was included instead, the between-study heterogeneity estimate would be so large that its influence on the weighting of the studies would lead to the pooled effect not being statistically significant.
+
+Generally, the new study point, or 'average' new study contribution point on the plot represents the contribution of the new study(ies), with other areas of the contour regions representing the same of hypothetical study(ies). However, when considering multiple new studies under a random-effects framework, this interpretation is slightly different in that the 'average' point already takes into account the estimated between-study heterogeneity. As such, the contour regions behave a little 'unexpectedly'. More details on this key distinction is discussed in @sec-multiple-new-studies-random.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'random', outcome = 'RR', zero = 1, sig_level = 0.1, contour_points = 50)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+#| label: fig-random-example
+#| fig-cap: "Extension to Langan plot presenting between-study heterogeneity"
+result$threshold_plot
+```
+
+# Derivation of contours {#sec-derivation-of-contours}
 
 This section will go over the derivation of forming the contours of the plot for different situations.
 
@@ -84,7 +229,7 @@ $$ {#eq-fixed-weight}
 
 Therefore, by substituting @eq-fixed-weight into @eq-rearranged-theta-new, we then get an equation for the contour threshold on the estimate-variance plane.
 
-##### Example plot
+@fig-fixed-single-example gives an example of the plot under a fixed-effects framework with a single new study.
 
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
@@ -93,6 +238,8 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-fixed-single-example
+#| fig-cap: "Example Langan plot under a fixed-effects framework with a single new study"
 result$threshold_result
 
 result$threshold_plot
@@ -140,7 +287,7 @@ $$
 
 where $\hat\theta_{nj}$ and $w_{nj}$ are the estimates and weights of the new studies respectively, for $j = 1,2,...,m$.
 
-##### Example plot
+@fig-fixed-multiple-example gives an example of the plot under a fixed-effects framework with multiple new studies.
 
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
@@ -149,6 +296,8 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-fixed-multiple-example
+#| fig-cap: "Example Langan plot under a fixed-effects framework with multiple new studies"
 result$threshold_result
 
 result$threshold_plot
@@ -180,7 +329,7 @@ $$
 
 Whilst in the fixed-effects framework, the extensions to multiple new studies is the same here as for statistical significance.
 
-##### Example plot
+@fig-fixed-clinical-example gives an example of the plot under a fixed-effects framework but considering clinical significance.
 
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
@@ -189,12 +338,14 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-fixed-clinical-example
+#| fig-cap: "Example Langan plot under a fixed-effects framework with a new study considering a clinical significance of risk ratio 0.9 or less"
 result$threshold_result
 
 result$threshold_plot
 ```
 
-## Random-effects
+## Random-effects {#sec-random-effects}
 
 When working in the random-effects framework things get more complex as $\tau^2 \ne 0$ and is estimated from the studies in the meta-analysis, including the new studies.
 
@@ -210,7 +361,7 @@ where $\tau^2_{new}$ is the estimated between-study heterogeneity when included 
 
 As such, an equation to form the contour thresholds cannot be derived as was done for the fixed-effects framework. Instead, as per Langan et. al., the standard error-estimate plane is broken down into 'pixels', where $\tau^2_{new}$ is estimated at each pixel (calculated from the original studies as well as the new study represented by the pixel). For each pixel, $\tau^2_{new}$, $\hat\theta_{new}$, and $var(\hat\theta_{new})$ are plugged into the meta-analysis equations ( @eq-updated-estimate and @eq-updated-variance), but using the weights calculated in @eq-random-weight, and noted whether or not the threshold was crossed (i.e. whether 95% CI was one side of null effect). The result at each pixel is coloured according to whether the threshold was met. This easily extends to the clinical bound thresholds as well as the statistical significance.
 
-##### Example plot
+@fig-random-single-example is an example of the plot under a random-effects framework with a single new study.
 
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
@@ -219,22 +370,18 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-random-single-example
+#| fig-cap: "Example Langan plot under a random-effects framework with a single new study"
 result$threshold_result
 
 result$threshold_plot
 ```
 
-### Multiple new studies {#multiple-new-studies-1}
+### Multiple new studies {#sec-multiple-new-studies-random}
 
 Under the random-effects model, we have to take the estimate-variance plane 'pixel-by-pixel'. When there was one new study, this was simple as the pixel had one set of possible values 'attached' to it that were easily obtained. When considering multiple new studies, the idea of using the 'average' (using random-effects weightings) of the new studies (as was done for fixed-effects) doesn't work for multiple reasons. Firstly, for each pixel, it is not possible to know what new studies created the 'average' represented by the respective point. Without knowing the new studies, the between-study heterogeneity can't be estimated. Secondly, different combinations of new studies could lead to the same 'average' effect size and standard error. It therefore follows that as there is no unique combination, there could be multiple different estimates of the between-study heterogeneity represented by a single pixel. To move forward, a compromise or assumption has to be made.
 
 One idea is to assume a constant between-study heterogeneity across all pixels in the plane. If this idea was to be carried out, then the optimal choice for the common between-study heterogeneity across all pixels would be the updated meta-analysis, $\tau^2_{new}$. Whilst the new studies 'average' would at least sit in the correct section of the plot, this becomes a very strong assumption as you get to more 'extreme' pixels/values. This has a consequence on the contours created, as the further extreme you go in the plot, the between-study heterogeneity is likely being underestimated, and therefore being coloured 'incorrectly' as leading to significance, whereas such cases would be unlikely.
-
-::: callout-important
-## Plot addition
-
-To ensure that viewers are appropriately aware of the assumption, the plot needs to have a summary somewhere of how $\tau^2$ has changed due to the inclusion of the new studies (and if possible, it's uncertainty).
-:::
 
 Another idea, that has less strong assumptions across the plot space is to consider the 'average' of the new studies, without taking into account the between-study heterogeneity, as the visual 'contribution'. As mentioned earlier, using random-weightings requires knowledge of $\tau^2$, but this isn't possible without knowing the exact 'layout' of the multiple new studies. If we remove the $\tau^2$ term, then things simplify.
 
@@ -362,9 +509,7 @@ K <- updated_tau2 / ((Z + (new_avg_est^2/new_avg_var) - ((X + new_avg_est/new_av
 
 In our example, $\tau^2_{new}$ is estimated as being `{r} round(updated_tau2, 3)` and the weighted average values (using this estimated between-study heterogeneity) $\theta_{\bar{new}}$ and $var(\hat\theta_{\bar{new}})$ are estimated to be `{r} round(new_avg_est, 3)` and `{r} round(new_avg_var, 3)`. Plugging these into equation @eq-tau2-estimate-adj, gives us an scaling factor of `{r} round(K, 3)`.
 
-##### Example plot
-
-One notices that with the example plot below, it behaves very differently to when considering one new study. This is because for multiple studies under a random-effects framework, the pixels are actually representing something slightly different - each pixel is already partially taking into account the estimated between-study heterogeneity. This is taken into account by removing the $\tau^2$ term from the new study elements of @eq-pooled-est-random-new and @eq-pooled-se-random-new, and it's this removal of $\tau^2$ that causes there to be differently coloured pixels compared to if only including one study. Essentially, when the viewer is considering other pixels away from the 'average' found from the new studies, they need to consider whether such a random-weighted average would likely exist (i.e., the colour represents the meta-analysis result *assuming* that the average of $m$ new studies, incorporating the estimated between-study heterogeneity, could sit at those pixel coordinates). Therefore, in this setting, the plot probably needs a warning to be careful when extracting far beyond the new data.
+One notices that with @fig-random-multiple-example-1 below, it behaves very differently to when considering one new study. This is because for multiple studies under a random-effects framework, the pixels are actually representing something slightly different - each pixel is already partially taking into account the estimated between-study heterogeneity. This is taken into account by removing the $\tau^2$ term from the new study elements of @eq-pooled-est-random-new and @eq-pooled-se-random-new, and it's this removal of $\tau^2$ that causes there to be differently coloured pixels compared to if only including one study. Essentially, when the viewer is considering other pixels away from the 'average' found from the new studies, they need to consider whether such a random-weighted average would likely exist (i.e., the colour represents the meta-analysis result *assuming* that the average of $m$ new studies, incorporating the estimated between-study heterogeneity, could sit at those pixel coordinates). Therefore, in this setting, the plot probably needs a warning to be careful when extracting far beyond the new data.
 
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
@@ -373,6 +518,8 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-random-multiple-example-1
+#| fig-cap: "Example Langan plot under a random-effects framework with multiple new studies"
 result$threshold_result
 
 result$threshold_plot
@@ -387,12 +534,14 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-random-multiple-example-2
+#| fig-cap: "Another example Langan plot under a random-effects framework but with different multiple new studies"
 result$threshold_result
 
 result$threshold_plot
 ```
 
-The resulting plot is actually fairly similar, suggesting that it might not be as dangerous to extrapolate beyond the 'average' point as first anticipated.
+The resulting plot, @fig-random-multiple-example-2, is actually fairly similar, suggesting that it might not be as dangerous to extrapolate beyond the 'average' point as first anticipated.
 
 Lets see what happens when we have three new studies who, on their own, would have led to a non-significant result under a random-effects framework.
 
@@ -403,20 +552,14 @@ result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
+#| label: fig-random-multiple-example-3
+#| fig-cap: "Another example Langan plot under a random-effects framework with multiple new studies which wouldn't lead to significance on their own"
 result$threshold_result
 
 result$threshold_plot
 ```
 
 Two interesting things to note here. Firstly, whilst each of the new studies individually wouldn't have led to a significant result, having three in this extreme area does lead to statistical significance (likely because having multiple studies in this extreme area (rather than one) possibly reduces the between-study heterogeneity). Secondly, the weighted 'average' new study, is nowhere near the new studies on this plot - illustrating that under this interpretation of the pixels, pixels that are far away from the general 'crowd' of studies are unlikely to exist in practicality (especially the areas of small standard error, due to the presence of the between-study heterogeneity term).
-
-::: callout-important
-## Plot additions
-
--   Dotted lines between the individual new studies and the overall 'average' new study (making a spider-like shape).
-
--   Choose a different shape for the 'average' new study, as using a diamond confuses people that there may be something associated with the width of the diamond (as is the case for the pooled effects).
-:::
 
 ## Compare each case
 
@@ -444,3 +587,8 @@ result_fixed_mult$threshold_plot + ggtitle("Fixed-effects with multiple new stud
 
 result_random_mult$threshold_plot + ggtitle("Random-effects with multiple new studies")
 ```
+
+# References
+
+::: {#refs}
+:::
