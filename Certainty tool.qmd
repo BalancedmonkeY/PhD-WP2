@@ -3,6 +3,13 @@ title: "Certainty tool"
 author: "Clareece Nevill"
 format: docx
 editor: visual
+bibliography: references-certainty.bib
+csl: american-medical-association.csl
+number-sections: true
+crossref:
+  labels: arabic        
+  subref-labels: alpha a
+  chapters: true
 ---
 
 This document is to go over the details of the certainty tool part of the update framework.
@@ -498,3 +505,24 @@ There were 9 cases where the tool downgrading less levels for imprecision than t
     -   Adverse events (for Jan '23 and Aug '21 update)
 
     -   Serious adverse events
+
+# Indirectness
+
+There are two elements of indirectness that can occur: a difference between studies included and review aims, and when indirect comparisons are utilised due to lack of direct evidence[@guyatt2025]. As we're only considering pairwise meta-analyses and RCTs, for now we're going to assume that the reviewer has not needed to find indirect evidence, and so we will focus on the former element of indirectness. Otherwise, the GRADE guidance for authors suggests considering whether the evidence found is more restrictive than the review question in terms of PICO[@schünemann2013]. Due to the nature of this domain, there will be no quantitative elements, and instead, the tool will have the following prompt questions from the user to answer.
+
+-   Are the populations presented in the current evidence so much more restrictive than the target population of the review that they're likely to affect the magnitude of effect substantially? If so, is it serious or very serious?
+
+-   Are the interventions that have been studied in the current pool of evidence more restrictive than the target interventions of the review? If so, is it serious or very serious?
+
+-   Are the comparators that have been included in the current studies more restrictive than the target comparator(s) of the review? If so, is it serious or very serious?
+
+-   Are the outcomes that are presented in the current evidence more restrictive than the target outcomes of the review? If so, is it serious or very serious?
+
+The questions are not to be answered on their own but as a collective as the judgement of whether to downgrade due to indirectness is to be done based on the combined effect of the areas considered above[@guyatt2011]. As such, the user will simply be asked to judge the evidence based on the prompt questions, as to whether any problems identified need to be rates down by two, one, or no levels. Additionally, when presented with the proposed tool, reviewers will also be given links to guidelines written by GRADE developers[@guyatt2011a; @guyatt2025a]
+
+Unfortunately, due to the nature of this domain, I cannot 'test' it, or measure it against any of the reviews I've collated.
+
+# References
+
+::: {#refs}
+:::
