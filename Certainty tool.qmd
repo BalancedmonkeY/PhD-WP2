@@ -9,7 +9,7 @@ This document is to go over the details of the certainty tool part of the update
 
 # Datasets
 
-For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 12 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, which will simplify data collection. Multiple outcomes were extracted to gain more data. For each outcome, the meta-analysis study data was extracted as well as how many levels the evidence was downgraded for each GRADE domain (i.e., 0, 1, or 2).
+For various elements of the certainty tool, datasets from existing living systematic reviews were needed to help define default threshold values. Based on the work from work package 1, we chose the 12 Cochrane living systematic reviews that were identified by the survey that used GRADE, were in a clinical field, included a pairwise meta-analysis, and more than 1 study/RCT. We are sticking with Cochrane as they have a unified data extraction system, which will simplify data collection. Multiple outcomes were extracted to gain more data (however, only outcomes measured on a risk ratio or mean difference scale were included for simplicity). For each outcome, the meta-analysis study data was extracted as well as meta-analysis model details and how many levels the evidence was downgraded for each GRADE domain (i.e., 0, 1, or 2).
 
 ## [Antibiotics COVID-19](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD015025/full "Cochrane website")
 
@@ -110,8 +110,6 @@ Outcomes for June 2022 version.
 -   Secondary infection based on 4 RCTs.
 
 ## [Non-small cell lung cancer](https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013257.pub3 "Cochrane website")
-
--   Outcome of overall survival (by PD-L1 expression $\ge$ 50%, for single immune checkpoint inhibitors. In the April 2021 (and December 2020) version, this estimate was based on 6 studies.
 
 -   Outcome of adverse events of grade 3-4 (for same comparison above). In April 2021 (and December 2020), this was based on 5 studies.
 
@@ -310,3 +308,193 @@ So far, the idea of an adjustment factor seems sensible as, with the current app
 A first approach to this, that is very rudimentary, is to move the default threshold such that the weighted average RoB 'correctly' matches to the set levels the researchers downgraded the outcome for in the most recent version. The new thresholds are then used when considering the review with new studies. This can be thought of as 'calibrating' the tool to the review, and so it'll be focusing on the [likely change]{.underline} from the addition of new studies, rather than a change due to the differences between researchers judgement and tool defaults.
 
 This has been added to the developed function(s) regarding risk of bias.
+
+# Imprecision
+
+The following are suggested ways to quantitatively assess imprecision:
+
+-   Are there enough events?
+
+-   Is the sample size large enough?
+
+-   Does the confidence interval cover multiple messages?
+
+Let's consider each one in a bit more detail regarding practically incorporating it into the tool.
+
+## Are there enough events?
+
+Based on what the smoking review does, they have the following rule based on the total number of events across all arms and all studies:
+
+-   If there are \< 100 events - downgrade 2 levels
+
+-   If there are \< 300 events - downgrade 1 level
+
+However, one does need to consider rare events, and so these thresholds will likely have to be editable. Furthermore, it is only suitable for reviews of dichotomous outcomes. Otherwise, this is a pretty easy method to implement.
+
+## Does the confidence interval cover multiple messages?
+
+This approach is a very practical way of assessing imprecision by actively seeing if the review is suggesting multiple 'messages' (i.e., clinical harm and benefit), a direct consequence of imprecision. It does so by the following categories:
+
+-   If the confidence interval (CI) includes a meaningfully positive or negative effect, as well as no meaningful effect in the opposite direction, then downgrade 1 level
+
+-   If the CI includes both meaningfully positive and negative effects, then downgrade 2 levels
+
+The main element that needs defining in this approach is what value translates to a 'meaningful' effect? The following defaults have been suggested by the literature:
+
+-   For dichotomous outcomes, a meaningful effect is when the relative risk reduction or increase is greater than 25%
+
+-   For continuous outcomes, the minimal importance difference should be used if known, otherwise a default of +/- 0.5 can be used.
+
+Again, as with considering number of events, these thresholds need to be editable by the reviewers where appropriate. This includes where the review topic is considering rare events.
+
+## Is the sample size large enough?
+
+This has been suggested by multiple sources. For dichotomous outcomes, it has been suggested to consider whether the total sample size across all trials included in the review is lower than an optimal information size. If so, downgrade 1 level. However, how should the optimal information size be calculated? It is often suggested to calculate the value as if it is a single trial and compare, but there are equations out there for calculating the optimal number of trials and average trial sample size for a meta-analysis. For continuous outcomes, a 'rule of thumb' that has been suggested is that is there are \< 400 participants in total across the review, then downgrade 1 level.
+
+Due to the discrepancies around how to calculate an optimal information size, I'm tempted to not utilise this approach. Additionally, I believe the other two approaches above probably cover any imprecision that would be 'found' by considering the total sample size of the review.
+
+## Testing tool
+
+We have two approaches for downgrading, both of which can lead to downgrading 2 levels. However, the tool can only downgrade a maximum of 2 levels (as per GRADE guidance). Where both approaches are appropriate (i.e., for dichotomous outcomes), the minimum number of levels downgraded will be taken. 'Summing' them doesn't make sense as both approaches are attempting to 'measure' the same thing, and so they shouldn't accumulate. Taking the minimum was preferred over taking the maximum as one approach may highlight precision, but if taking the maximum, the other approach may downgrade it unecessarily (e.g., if the confidence interval is narrow and only inclusing one 'interpretation', but the number of the events is slightly small). Furthermore, when taking the minimum rather than the maximum, this married up better with our datasets (agreement in 72% of cases compared with 57%). In addition, I also tested to see whether just sticking with the confidence interval approach improved agreement, but it didn't (agreement of 66%).
+
+Let's see how well the tool performs at predicting the imprecision grading levels using the default values suggested by the literature.
+
+```{r, echo = FALSE, output = FALSE}
+source("Imprecision_downgrades.R")
+```
+
+```{r, echo = FALSE}
+# Calculate total events and extract confidence intervals for each dataset and add to GRADE dataframe
+GRADE_results$total_events <- mapply(function(review_type, version_date, outcome, measure) {
+  if (measure == "RR") {
+    # subset primary_data
+    data <- primary_data %>% 
+      filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome)
+    # run sum_events()
+    sum_events(
+      data = data,
+      event_cols = c("Experimental cases", "Control cases")
+    )
+  } else {
+    NA
+  }
+},
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure)
+
+GRADE_results$CI <- mapply(function(review_type, version_date, outcome, measure, model) {
+  # subset primary_data
+  data <- primary_data %>% 
+    filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome)
+  # run meta-analysis
+  if (measure == 'RR') {
+    rma_df <- metafor::escalc(data = data, ai = as.numeric(`Experimental cases`), ci = as.numeric(`Control cases`), n1i = `Experimental N`, n2i = `Control N`, measure = measure)
+  } else if (measure == 'MD') {
+    rma_df <- metafor::escalc(data = data, n1i = `Experimental N`, n2i = `Control N`, m1i = as.numeric(`Experimental mean`), m2i = as.numeric(`Control mean`), sd1i = as.numeric(`Experimental SD`), sd2i = as.numeric(`Control SD`), measure = measure)
+  }
+  meta <- metafor::rma(data = rma_df, yi = yi, vi = vi, measure = measure, method = model)
+  if (measure == 'RR') {
+    paste0(round(exp(meta$ci.lb), 2), ", ", round(exp(meta$ci.ub), 2))
+  } else {
+    paste0(round(meta$ci.lb, 2), ", ", round(meta$ci.ub, 2))
+  }
+}
+,
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure, GRADE_results$Model)
+
+# Predict downgrading levels based on the information
+GRADE_results$imprecision_levels <- mapply(function(review_type, version_date, outcome, measure, total_events, CI) {
+  
+  # create interpretation dataframe
+  if (measure == "RR") {
+    interpretation_df <- CI_interpretation_bin(
+      CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]),
+      CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
+    )
+  } else if (measure == "MD") {
+    interpretation_df <- CI_interpretation_cont(
+      CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]),
+      CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
+    )
+  }
+  
+  # predict number of levels to downgrade by
+  imprecision_downgrades(
+    total_events = total_events, interpretation_df = interpretation_df
+  )
+
+},
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure, GRADE_results$total_events, GRADE_results$CI)
+
+# Display results
+knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgrade Imprecision", "total_events", "CI", "imprecision_levels")) %>% arrange(total_events), digits = 2)
+```
+
+## Exploring differences
+
+Of the 47 outcomes, the tools prediction of the number of levels to downgrade matched the reviewers assessment for `` sum(GRADE_results$`Downgrade Imprecision` == GRADE_results$imprecision_levels) `` outcomes. Let's explore those that didn't match and see if we can know the reason.
+
+### Instances where tool over-downgraded
+
+There were 4 cases where the tool downgrading more levels for imprecision than the reviewers did. This happened for the following outcomes:
+
+-   Convalescent plasma - Adverse events
+
+    -   As of 22-Oct-25, the review is locked, so can't see details on why only downgraded 1 level. But there were only 69 events, and a CI of 0.58 to 1.41 which is quite wide.
+
+-   Ivermectin COVID-19 - Adverse events
+
+    -   As of 22-Oct-25, the review is locked, so can't see details on why only downgraded 1 level. But there were 47 events, and a CI of 0.61 to 1.79, which is again quite a wide interval.
+
+-   Janus kinase inhibitors - Mortality at day 60
+
+    -   There were 249 events and a CI of 0.56 to 0.86. The reviewers didn't downgrade the evidence at all for imprecision, which I can see. The number of events is only a little less than 300, and the confidence interval is quite well situated to 'one side', however, the upper bound was still above the threshold of 0.75. In this case, I would be tempted to say that the reviewers would consider a different threshold for defining a 'meaningful effect'.
+
+-   Antibiotics COVID-19 - Serious adverse events
+
+    -   There were 185 events and a CI of 0.89 to 1.4, but the reviewers didn't downgrade the evidence at all for imprecision. Considering the outcome is serious adverse events, having 185 events may not be considered as a small amount. Furthermore, the reviewers may not consider an upper bound of 1.4 to mean there are results in the meaningful positive effect region.
+
+::: callout-tip
+## Adjustment factor proposal
+
+Adding an adjustment factor here is less simple than with risk of bias as we have two approaches for dichotomous outcomes.
+
+If the outcome is likely to be a rare event (e.g., serious adverse events) - and indicated by the reviewers as so - then adjust the threshold regarding total events so that a previous GRADE result marries up. Otherwise, adjust the thresholds related to what a 'meaningful' effect is for assessing the the placement of the confidence interval.
+:::
+
+::: callout-caution
+## Adjustment factor warning
+
+Currently, I've put in code that allows the threshold to automatically change if the tool didn't correctly predict the downgrading levels on a previous version of the review. However, if reviewers are competent and have a suitable system for carrying out GRADE, then they should be able to input their own thresholds that should allow the tool to marry up with previous versions.
+
+As such, the tool/code should only have the automatic 'threshold adjuster' if it is specifically asked for. These cases would be for myself to test it on reviews for which I don't have contact with the authors, and potentially reviews that are midway through being living, and wish to have some help with defining the thresholds. Therefore, the tool should also output which thresholds it used (so that users can be confident in knowing what was used).
+:::
+
+### Instances where the tool under-graded
+
+There were 9 cases where the tool downgrading less levels for imprecision than the reviewers did. This happened for the following outcomes:
+
+-   Fluvoxamine COVID-19
+
+    -   Adverse events
+
+        -   There were 201 events and a CI of 0.82 to 1.37, yet the reviewers downgraded it 2 levels for imprecision.
+
+    -   Hospitalisation or death
+
+        -   There were 181 events and a CI of 0.16 to 1.88, yet the reviewers downgraded it 2 levels for imprecision. If the tool took the maximum levels rather than the minimum, then the tool would have agreed as the CI does include meaningful benefit and harm (i.e., it is very wide).
+
+    -   Serious adverse events
+
+-   Oral anticoagulation
+
+    -   Mortality at 6 months
+
+    -   Mortality at 12 months
+
+-   Remdesivir COVID-19
+
+    -   Mortality
+
+    -   Adverse events (for Jan '23 and Aug '21 update)
+
+    -   Serious adverse events
