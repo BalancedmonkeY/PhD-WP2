@@ -1,6 +1,7 @@
 ---
 title: "Certainty tool"
 author: "Clareece Nevill"
+engine: knitr
 format: docx
 editor: visual
 bibliography: references-certainty.bib
@@ -362,7 +363,7 @@ Due to the discrepancies around how to calculate an optimal information size, I'
 
 ## Testing tool
 
-We have two approaches for downgrading, both of which can lead to downgrading 2 levels. However, the tool can only downgrade a maximum of 2 levels (as per GRADE guidance). Where both approaches are appropriate (i.e., for dichotomous outcomes), the minimum number of levels downgraded will be taken. 'Summing' them doesn't make sense as both approaches are attempting to 'measure' the same thing, and so they shouldn't accumulate. Taking the minimum was preferred over taking the maximum as one approach may highlight precision, but if taking the maximum, the other approach may downgrade it unecessarily (e.g., if the confidence interval is narrow and only inclusing one 'interpretation', but the number of the events is slightly small). Furthermore, when taking the minimum rather than the maximum, this married up better with our datasets (agreement in 72% of cases compared with 57%). In addition, I also tested to see whether just sticking with the confidence interval approach improved agreement, but it didn't (agreement of 66%).
+We have two approaches for downgrading, both of which can lead to downgrading 2 levels. However, the tool can only downgrade a maximum of 2 levels (as per GRADE guidance). Where both approaches are appropriate (i.e., for dichotomous outcomes), the maximum number of levels downgraded will be taken. 'Summing' them doesn't make sense as both approaches are attempting to 'measure' the same thing, and so they shouldn't accumulate. Taking the maximum was preferred over taking the minimum as it ensures that any information indicative of imprecision isn't ignored. This approach also follows how the e-cigarettes review team assess imprecision.
 
 Let's see how well the tool performs at predicting the imprecision grading levels using the default values suggested by the literature.
 
@@ -409,28 +410,15 @@ GRADE_results$CI <- mapply(function(review_type, version_date, outcome, measure,
 GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure, GRADE_results$Model)
 
 # Predict downgrading levels based on the information
-GRADE_results$imprecision_levels <- mapply(function(review_type, version_date, outcome, measure, total_events, CI) {
-  
-  # create interpretation dataframe
-  if (measure == "RR") {
-    interpretation_df <- CI_interpretation_bin(
-      CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]),
-      CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
-    )
-  } else if (measure == "MD") {
-    interpretation_df <- CI_interpretation_cont(
-      CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]),
-      CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
-    )
-  }
+GRADE_results$imprecision_levels <- mapply(function(total_events, CI) {
   
   # predict number of levels to downgrade by
   imprecision_downgrades(
-    total_events = total_events, interpretation_df = interpretation_df
+    total_events = total_events, CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]), CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
   )
 
 },
-GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure, GRADE_results$total_events, GRADE_results$CI)
+GRADE_results$total_events, GRADE_results$CI)
 
 # Display results
 knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgrade Imprecision", "total_events", "CI", "imprecision_levels")) %>% arrange(total_events), digits = 2)
@@ -438,73 +426,86 @@ knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgra
 
 ## Exploring differences
 
-Of the 47 outcomes, the tools prediction of the number of levels to downgrade matched the reviewers assessment for `` sum(GRADE_results$`Downgrade Imprecision` == GRADE_results$imprecision_levels) `` outcomes. Let's explore those that didn't match and see if we can know the reason.
+Of the 47 outcomes, the tools prediction of the number of levels to downgrade matched the reviewers assessment for `{r} sum(GRADE_results[, "Downgrade Imprecision"] == GRADE_results$imprecision_levels)` outcomes. Let's explore those that didn't match and see if we can know the reason.
 
 ### Instances where tool over-downgraded
 
-There were 4 cases where the tool downgrading more levels for imprecision than the reviewers did. This happened for the following outcomes:
+-   Chronic rhinosinusitis - serious adverse events & avoidance of surgery
 
--   Convalescent plasma - Adverse events
+    -   SAEs: 67 events; 0.3 to 0.8. Avoidance: 27 events; 0.05 to 0.52. The reviewers only rated down 1 level for serious adverse events and none for avoidance, whereas the tool suggested downgrading two levels for both outcomes due to both having less than 100 events.\
+        For SAEs, the reviewers recognised that there was a small sample size, but didn't think it was worth downgrading two levels - however, it doesn't make sense that the lower sample size for avoidance didn't have any downgrading due to imprecision (the outcome was only downgraded due to risk of bias).
 
-    -   As of 22-Oct-25, the review is locked, so can't see details on why only downgraded 1 level. But there were only 69 events, and a CI of 0.58 to 1.41 which is quite wide.
+-   Convalescent plasma - adverse events & serious adverse events
 
--   Ivermectin COVID-19 - Adverse events
+    -   AEs: 69 events; 0.58 to 1.41. SAEs: 577 events; 0.91 to 1.43. The reviewers only rated down 1 level for AEs and none for AEs, whereas the tools suggested two levels for AEs due to the very small number of events and wide CI, and one level for SAEs due to the wide CI. The review authors acknowledge the few participants and wide intervals for AEs, but still only offered to downgrade 1 level.
 
-    -   As of 22-Oct-25, the review is locked, so can't see details on why only downgraded 1 level. But there were 47 events, and a CI of 0.61 to 1.79, which is again quite a wide interval.
+-   Ivermectin - adverse events & viral clearance
 
--   Janus kinase inhibitors - Mortality at day 60
+    -   AEs: 47 events; 0.61 to 1.79. Viral clearance: 97 events; 0.8 to 1.58. The reviewers only rated both outcomes down one level, whereas the tool suggested 2 levels due to less than 100 events in both outcomes (and wide CI for AEs). The review authors acknowledges the few participants and wide CIs, but still didn't downgrade as far as the tool did.
 
-    -   There were 249 events and a CI of 0.56 to 0.86. The reviewers didn't downgrade the evidence at all for imprecision, which I can see. The number of events is only a little less than 300, and the confidence interval is quite well situated to 'one side', however, the upper bound was still above the threshold of 0.75. In this case, I would be tempted to say that the reviewers would consider a different threshold for defining a 'meaningful effect'.
+-   Systematic corticosteroids - mortality at 120 days
 
--   Antibiotics COVID-19 - Serious adverse events
+    -   186 events; 0.24 to 2.3. The reviewers only rated down one level, whereas the tool suggested 2 levels due to the hugely wide CI. The reviewers acknowledged the wide CI, but didn't downgrade to the degree that the tool did.
 
-    -   There were 185 events and a CI of 0.89 to 1.4, but the reviewers didn't downgrade the evidence at all for imprecision. Considering the outcome is serious adverse events, having 185 events may not be considered as a small amount. Furthermore, the reviewers may not consider an upper bound of 1.4 to mean there are results in the meaningful positive effect region.
+-   Oral anticoagulation - major & minor bleeding
 
-::: callout-tip
-## Adjustment factor proposal
+    -   Major: 143 events; 2.05 to 4.09. Minor: 143 events; 1.89 to 5.02. The review authors didn't downgrade for imprecision, but the tool did by one level due to having less than 300 events. Naturally, the authors won't give a reason for *not* downgrading, but I imagine it's likely to do with the CIs being very much in the positive 'zone' (i.e., far away from region of 'no effect'). **Does this counteract the small number of events?** The authors could change the threshold if 143 isn't concerning for them - but I don't think one 'measure' of imprecision should interact with the other.
 
-Adding an adjustment factor here is less simple than with risk of bias as we have two approaches for dichotomous outcomes.
+-   Remdesivir - serious adverse events
 
-If the outcome is likely to be a rare event (e.g., serious adverse events) - and indicated by the reviewers as so - then adjust the threshold regarding total events so that a previous GRADE result marries up. Otherwise, adjust the thresholds related to what a 'meaningful' effect is for assessing the the placement of the confidence interval.
-:::
+    -   634 events; 0.65 to 1.07. The review authors didn't downgrade for imprecision, but the tool did for having a wide CI. Did the review authors not think the position of the CI was a concern because of the large number of events?
 
-::: callout-caution
-## Adjustment factor warning
+-   Inhaled corticosteroids - symptom resolution
 
-Currently, I've put in code that allows the threshold to automatically change if the tool didn't correctly predict the downgrading levels on a previous version of the review. However, if reviewers are competent and have a suitable system for carrying out GRADE, then they should be able to input their own thresholds that should allow the tool to marry up with previous versions.
+    -   1,009 events; 1.09 to 1.3. Same as remdesivir above. Furthermore, the CI was only just beyond the default threshold for clinical significance.
 
-As such, the tool/code should only have the automatic 'threshold adjuster' if it is specifically asked for. These cases would be for myself to test it on reviews for which I don't have contact with the authors, and potentially reviews that are midway through being living, and wish to have some help with defining the thresholds. Therefore, the tool should also output which thresholds it used (so that users can be confident in knowing what was used).
-:::
+-   Janus kinase - mortality at 28 and 60 days & serious adverse events
+
+    -   Mortality28: 1,346 events; 0.57 to 0.91. Mortality60: 249 events; 0.56 to 0.86. SAEs: 530 events; 0.68 to 0.92. The review authors didn't downgrade any of the outcomes for imprecision, but the tool downgraded each for 1 level: due to wide CI for all, and also due to number of events for mortality at 60 days. Apart from mortality at 60 days, the other outcomes had very high numbers of events. Furthermore, whilst the CI were deemed wide due to the default values, there were all one side of the null effect. As such, the review authors may have had a different opinion on clinical significance.
+
+-   Antibiotics - serious adverse events & arrhythmias
+
+    -   SAEs: 185 events; 0.89 to 1.4. Arrhythmias: 341 events; 0.73 to 1.15. The reviewers didn't downgrade for precision, whereas the tool did by one level due to a wide CI for both events (and low number of events for SAEs). The wide CIs were borderline regarding the default value.
+
+From assessing these case-studies, there appears to be two general themes appearing:
+
+1.  Review authors have different thresholds (in both number of events, and wide CIs) of what they consider is worth downgrading (which is erring on the side of making the data look 'better'). Regarding the wide CIs, I'm not entirely sure whether some of them have considered a null effect *region* rather than just a line.
+
+2.  If one of the imprecision measures seem to indicate no problems, reviewers may feel that it invalidates potential evidence of imprecision from the other measure. E.g., when the number of events is very high, but the CI is still wide enough to cover two clinically significant states. This shouldn't be the case - lack of evidence doesn't **prove** that things are okay.
 
 ### Instances where the tool under-graded
 
-There were 9 cases where the tool downgrading less levels for imprecision than the reviewers did. This happened for the following outcomes:
+-   Fluvoxamine - adverse events
 
--   Fluvoxamine COVID-19
+    -   201 events; 0.82 to 1.37. The reviewers downgraded by two levels, whereas the tool only downgraded by one level (due to \< 300 events and CI going beyond 1.25, but not beyond 0.75). The reviewers downgraded by 2 levels "since the CI suggests both potential benefit and potential harm". Unfortunately I couldn't find any details regarding what threshold they considered to be clinical benefit/harm - disagreement seems related to this.
 
-    -   Adverse events
+-   Oral anticoagulation - mortality at 12 months
 
-        -   There were 201 events and a CI of 0.82 to 1.37, yet the reviewers downgraded it 2 levels for imprecision.
+    -   717 events; 0.87 to 1.03. The tool didn't downgrade for imprecision but the reviewers did by one level, with the reason being "confidence interval of absolute effect suggests both potential harm and potential benefit, with large number of events". No other details available regarding threshold used.
 
-    -   Hospitalisation or death
+-   Remdesivir - mortality & adverse events (Jan '23 update only)
 
-        -   There were 181 events and a CI of 0.16 to 1.88, yet the reviewers downgraded it 2 levels for imprecision. If the tool took the maximum levels rather than the minimum, then the tool would have agreed as the CI does include meaningful benefit and harm (i.e., it is very wide).
+    -   Mortality: 749 events; 0.81 to 1.06. AEs: 1,463 events; 0.92 to 1.18. The tool didn't downgrade for imprecision but the reviewers did for both outcomes by one level, with the reason being "wide confidence intervals in the studies and/or the 95% confidence interval includes both benefits and harms". Again, no details of threshold used.
 
-    -   Serious adverse events
+In summary, the only reason these cases didn't agree with the tool is that they were using a different threshold for defining clinical benefit and harm. Unfortunately, the thresholds that they used were not reported (in the main text at least). However, this doesn't impact the functionality of the tool as users can specify their own thresholds - which these LSRs indicate they have.
 
--   Oral anticoagulation
+::: callout-caution
+## Adjustment factor now optional
 
-    -   Mortality at 6 months
+Whether the tools should adjust the thresholds based on previous reviews is now an option, rather than doing so by default. In an ideal world, reviewers should be competent enough to have a suitable system for carrying out GRADE, and so should be able to input their own thresholds that should allow the tool to marry up with previous versions.
 
-    -   Mortality at 12 months
+I suggest only minor cases for using the adjuster. These cases would be for myself to test it on reviews for which I don't have contact with the authors, and potentially reviews that are midway through being living, and wish to have some help with defining the thresholds. Therefore, the tool will also output which thresholds it used (so that users can be confident in knowing what was used).
+:::
 
--   Remdesivir COVID-19
+::: callout-note
+## Observation
 
-    -   Mortality
+Nicola Lindson suggested some reviewers might not downgrade as far as the proposed tool due to fears of it looking badly on their review. This might be more prevalent when the outcome has already been downgraded for a different domain (i.e., the reviewers might be hesitant to further downgrade it regarding another domain).
 
-    -   Adverse events (for Jan '23 and Aug '21 update)
+Can I quantify this?
+:::
 
-    -   Serious adverse events
+For instances when the adjustment factor is needed, here it is less simple to implement as we have two approaches for dichotomous outcomes. I have created an auto-adjust matrix that decides on how and which thresholds are altered depending on how there is disagreement (i.e., is it by one measure, or both, and in which directions). Generally, from experience from comparing disagreements, when both measures disagreed, the reviewers specified it was regarding the CI. Therefore, when both measures had disagreement but only one measure was needed to gain overall agreement (as the maximum is taken), often the threshold relating to CI was adjusted. I created a matrix of which thresholds to adjust and in which direction depending on where the disagreements lie.
 
 # Indirectness
 
@@ -518,9 +519,55 @@ There are two elements of indirectness that can occur: a difference between stud
 
 -   Are the outcomes that are presented in the current evidence more restrictive than the target outcomes of the review? If so, is it serious or very serious?
 
-The questions are not to be answered on their own but as a collective as the judgement of whether to downgrade due to indirectness is to be done based on the combined effect of the areas considered above[@guyatt2011]. As such, the user will simply be asked to judge the evidence based on the prompt questions, as to whether any problems identified need to be rates down by two, one, or no levels. Additionally, when presented with the proposed tool, reviewers will also be given links to guidelines written by GRADE developers[@guyatt2011a; @guyatt2025a]
+The questions are not to be answered on their own but as a collective as the judgement of whether to downgrade due to indirectness is to be done based on the combined effect of the areas considered above[@guyatt2011]. As such, the user will simply be asked to judge the evidence based on the prompt questions, as to whether any problems identified need to be rates down by two, one, or no levels. Additionally, when presented with the proposed tool, reviewers will also be given links to guidelines written by GRADE developers[@guyatt2011; @guyatt2025a]
 
 Unfortunately, due to the nature of this domain, I cannot 'test' it, or measure it against any of the reviews I've collated.
+
+As the judgement of indirectness requires knowledge of the study characteristics, this judgement should be able to be made in-between data extraction and committing to an update. From experience, some of the research team will be aware of the characteristics of the new studies, and whether their accumulating changes any levels of indirectness.
+
+# Inconsistency
+
+Both Stewart et. al.[@stewart2015], the GRADE guidance[@schünemann2013a], and Cochrane author advice videos encourage researchers to consider the following elements when making a judgement regarding inconsistency:
+
+-   Is there a wide variation in effect estimates?
+
+-   Do the confidence intervals overlap?
+
+-   Statistical test for heterogeneity (threshold for p-value needed)
+
+-   $I^2$ statistic, with the following rough guide:
+
+    -   0% to 40% - low heterogeneity
+
+    -   30% to 60% - moderate heterogeneity
+
+    -   50% to 90% - substantial heterogeneity
+
+    -   75% to 100% - considerable heterogeneity
+
+It should be notes that before considering any of the above, authors should have already considered whether any heterogeneity can be adequately explained (and adjusted for). As such, the reviewer should be making a judgment based on any remaining heterogeneity/inconsistency.
+
+Whilst $I^2$ is a simple quantitative measure, due to ambiguous interpretation and researchers in the field suggested is may be misleading[@guyatt2025b], I don't think this would be a good element to use in the tool. For similar reasons, I don't think utilising a test statistic for heterogeneity would be the best approach. Core GRADE[@guyatt2025b] considers a visual inspection of the forest plot to assess is there is any overlap of confidence intervals, difference in point estimates (with a focus on a chosen threshold representing the null effect or minimal important difference). As such, the tool will try to incorporate the first two elements in the list above.
+
+We will follow the plan that Core GRADE suggests[@guyatt2025b], which considers the following three questions:
+
+1.  Are there important differences in point estimates of studies and limited overlap of their CIs? If no, then don't rate down and stop. If yes, consider next question.
+
+2.  Evaluate point estimates of studies in relation to chosen threshold. If the majority are on one side, then don't rate down and stop. If there are substantial proportions on both sides, then consider the next question.
+
+3.  Is the current inconsistency explained by credible subgroup analyses? If not, then rate down for inconsistency. Otherwise, present results separately for each subgroup and evaluate inconsistency separately.
+
+The tool will roughly follow the same plan (i.e., it should give the same results), but have a slightly different order of operations.
+
+## Overlap of CIs
+
+We will first consider how much the confidence intervals are overlapping. The reason for not starting with 'important' differences in point estimates, is that this is hard to categorise. Furthermore, overlapping of confidence intervals and variation regarding a user-defined threshold will likely cover presence of inconsistency.
+
+To quantitatively assess overlap of confidence intervals, rather than visually, we will consider for each potential effect estimate, what proportion of confidence intervals included this value. The spread of these proportions will then be assessed and measured against some types of thresholds (which will be defined by using the data collected from previous reviews).
+
+## Variation in point estimates regarding threshold
+
+## Subgroup consideration
 
 # References
 

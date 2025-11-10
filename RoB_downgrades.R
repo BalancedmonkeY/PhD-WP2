@@ -209,14 +209,18 @@ weighted_RoB <- function(
 #' @param RoB_avg Weighted average RoB value calculated from weighted_RoB
 #' @param one_level_threshold Threshold value of weighted RoB value (1 = all low, 3 = all high) that means downgrading by one level
 #' @param two_level_threshold Threshold value of weighted RoB value (1 = all low, 3 = all high) that means downgrading by two levels
+#' @param auto_adjust Logical parameter to indicate whether to automatically adjust the thresholds based on previous versions of the review
 #' @param prev_RoB_avg Weighted average risk of bias score from the previous version
 #' @param prev_levels The number of levels the evidence was downgraded due to risk of bias in the previous version
-#' @return levels = Number of levels the evidence is likely to be downgraded due to risk of bias (0, 1, or 2)
+#' @return list containing: levels = Number of levels the evidence is likely to be downgraded due to risk of bias (0, 1, or 2)
+#'                          one_level_threshold = threshold value used to downgrade one level
+#'                          two_level_threshold = threshold valye used to downgrade two levels
 
 RoB_downgrades <- function(
     RoB_avg,
     one_level_threshold = 1.5,
     two_level_threshold = NULL,
+    auto_adjust = FALSE,
     prev_RoB_avg,
     prev_levels
 ) {
@@ -225,18 +229,22 @@ RoB_downgrades <- function(
   # Adjust thresholds if needed, based on previous version #
   #--------------------------------------------------------#
   
-  if (!is.null(prev_RoB_avg) & !is.null(prev_levels)) {
-    # increase one_level_threshold if not previously downgraded, but previous score was higher than 1.5
-    if (prev_levels == 0 & prev_RoB_avg >= 1.5) {
-      one_level_threshold <- ceiling(prev_RoB_avg*20)/20 # puts threshold at next highest value, on 0.05 scale
+  if (auto_adjust) {
+  
+    if (!is.null(prev_RoB_avg) & !is.null(prev_levels)) {
+      # increase one_level_threshold if not previously downgraded, but previous score was higher than 1.5
+      if (prev_levels == 0 & prev_RoB_avg >= 1.5) {
+        one_level_threshold <- ceiling(prev_RoB_avg*20)/20 # puts threshold at next highest value, on 0.05 scale
+      }
+      # decrease one_level_threshold if previously downgraded, but previous score was lower than 1.5
+      else if (prev_levels >= 1 & prev_RoB_avg < 1.5) {
+        one_level_threshold <- floor(prev_RoB_avg*20)/20
+      }
     }
-    # decrease one_level_threshold if previously downgraded, but previous score was lower than 1.5
-    else if (prev_levels >= 1 & prev_RoB_avg < 1.5) {
-      one_level_threshold <- floor(prev_RoB_avg*20)/20
-    }
-  }
   
   # don't need to adjust the threshold for two levels of downgrading as this is set to NULL by default
+    
+  }
   
   
   #---------------------------------------------------------------#
@@ -261,6 +269,8 @@ RoB_downgrades <- function(
     }
   
   
-  return(downgrade_levels)
+  return(list(levels = downgrade_levels,
+              one_level_threshold = one_level_threshold,
+              two_level_threshold = two_level_threshold))
   
 }

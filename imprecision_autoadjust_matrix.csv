@@ -1,0 +1,27 @@
+Level,Events,CI,Change,Event threshold 1,Event threshold 2,CI threshold
+0,NULL,1,CI,n/a,n/a,Increase
+0,NULL,2,CI,n/a,n/a,Increase
+0,0,1,CI,n/a,n/a,Increase
+0,0,2,CI,n/a,n/a,Increase
+0,1,0,Events,Decrease,n/a,n/a
+0,2,0,Events,Decrease,n/a,n/a
+0,1,1,Both,Decrease,n/a,Increase
+0,1,2,Both,Decrease,n/a,Increase
+0,2,1,Both,Decrease,n/a,Increase
+0,2,2,Both,Decrease,n/a,Increase
+,,,,,,
+2,NULL,1,CI,n/a,n/a,Decrease
+2,NULL,0,CI,n/a,n/a,Decrease
+2,1,1,CI,n/a,n/a,Decrease
+2,1,0,Events,n/a,Increase,n/a
+2,0,1,CI,n/a,n/a,Decrease
+2,0,0,CI,n/a,n/a,Decrease
+,,,,,,
+1,NULL,0,CI,n/a,n/a,Decrease
+1,NULL,2,CI,n/a,n/a,Increase
+1,0,0,CI,n/a,n/a,Decrease
+1,0,2,CI,n/a,n/a,Increase
+1,1,2,CI,n/a,n/a,Increase
+1,2,0,Events,n/a,Decrease,n/a
+1,2,1,Events,n/a,Decrease,n/a
+1,2,2,Both,n/a,Decrease,Increase
