@@ -78,7 +78,10 @@ CI_interpretation_cont <- function(
 #' @param prev_CI_lb Lower bound of 95% CI of previous pooled effect
 #' @param prev_interpretation_df Interpretation dataframe from previous version
 #' @param prev_levels The number of levels the evidence was downgraded due to imprecision in the previous version
-#' @return levels = Number of levels the evidence is likely to be downgraded due to imprecision (0, 1, or 2)
+#' @return list containing: levels = Number of levels the evidence is likely to be downgraded due to imprecision (0, 1, or 2)
+#'                          event_threshold_2 = threshold value used for number of events that will lead to downgrading 2 levels (may have changed from autoadjust)
+#'                          event_threshold_1 = threshold value used for number of events that will lead to downgrading 1 level (may have changed from autoadjust)
+#'                          CI_threshold =  threshold value used represent meaningful effect (may have changed from autoadjust)
 
 imprecision_downgrades <- function(
     total_events = NULL,
@@ -203,5 +206,8 @@ imprecision_downgrades <- function(
     levels = interpretation_downgrade
   }
   
-  return(levels)
+  return(list(levels = levels,
+              event_threshold_2 = event_threshold_2,
+              event_threshold_1 = event_threshold_1,
+              CI_threshold = CI_threshold))
 }
