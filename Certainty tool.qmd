@@ -563,11 +563,191 @@ The tool will roughly follow the same plan (i.e., it should give the same result
 
 We will first consider how much the confidence intervals are overlapping. The reason for not starting with 'important' differences in point estimates, is that this is hard to categorise. Furthermore, overlapping of confidence intervals and variation regarding a user-defined threshold will likely cover presence of inconsistency.
 
-To quantitatively assess overlap of confidence intervals, rather than visually, we will consider for each potential effect estimate, what proportion of confidence intervals included this value. The spread of these proportions will then be assessed and measured against some types of thresholds (which will be defined by using the data collected from previous reviews).
+I asked ChatGPT (GPT-5) for help coming up with ideas based on mathematical principles for quantitatively assessing the overlap of 95% CIs. The general idea it came up with was to calculate the 'common probabilistic overlap' where each CI is represented by the normal distribution is was estimated from. I asked it for code and references, but this did give some packages that don't exist and non-existing references - but it gave me an idea to start from (and some legit references to look at).
+
+::: callout-note
+## ChatGPT prompts
+
+1.  Does there exact a mathematical way to quantitatively assess overlap of multiple ranges?
+
+2.  Are there any mathematical extensions to the problem, given that the values within each range aren't equal (i.e., the ranges are actual confidence intervals, and so I'd be more interested in overlap of values nearer the middle, than the edges)
+
+3.  I'm looking at the overlap of 95% confidence intervals, which dont have a pdf, but use a pdf to calculate the interval. Are there any applications to 95% confidence intervals specifically?
+
+4.  Can you show me how to compute the probabilistic overlap of three 95% confidence intervals using R code please
+
+5.  Do you have a reference for calculating the common probabilistic overlap?
+
+6.  Can you extend the Jaccard Index two multiple ranges, and give an example in R code (this was suggested after the first prompt)
+
+7.  Do you have a reference for the mean pairwise Jaccard index?
+:::
+
+Using probability distributions proved to be too difficult - so let's start simple and assume uniform distribution (and so is a geometric overlap, rather than a statistical one).
+
+The Jaccard index is an option, but the standard extension to multiple ranges, defining a strict intersection, is not suitable as the overlap may not be one simple range, and there may be no place where **all** confidence intervals overlap, but a few might overlap with each other. ChatGPT suggests an average pairwise Jaccard index as this gives a better sense of overall similarity.
+
+The Jaccard index is the intersection of sets divided by the union of sets[@real1996]:
+
+$$
+J(S_a, S_b) = \frac{|S_a \cap S_b|}{|S_a \cup S_b|}
+$$
+
+When there are more than two sets, when interested in the overall similarity, rather than the strict overlap, the pairwise average Jaccard Index can be calculated[@fan2016]:
+
+$$
+\bar{J} = \frac{2}{n(n-1)} \sum_a \sum_{b \ne a} J(S_a, S_b)
+$$
+
+Calculate the intersection and union of two sets of ranges:
+
+$$
+CI_a = [LB_a, UB_a], CI_b = [LB_b, UB_b]
+$$
+
+$$
+|CI_a \cap CI_b| = max(0, min(UB_a, UB_b) - max(LB_a, LB_b))
+$$
+
+$$
+|CI_a \cup CI_b| = max(UB_a, UB_b) - min(LB_a, LB_b)
+$$
+
+However, confidence intervals can be negative (especially when on the log scale, which would be optimal for ratios, otherwise they wouldn't be symmetrical). To take into account the fact that values can be negative, we will transform all the CIs to be positive (this will still give an equivalent Jaccard Index as its standardised). To do this, we'll take the smallest lower bound, and if it's negative, add the modulus of that value to all upper bounds and lower bounds. Otherwise, when the intersection of the two intervals lies in the negative space, there is no way to differentiate the legit intersection from no intersection.
 
 ## Variation in point estimates regarding threshold
 
+Based on a designated value of importance, simply calculate the proportion of study estimates that were on one side of the threshold (and try and find a default based on the data we have here). The default value will simply be the null value (0 for differences, 1 for ratios).
+
+Lets calculate the average pairwise Jaccard index and variation proportion for each review outcome.
+
+```{r, echo = FALSE, output = FALSE}
+library(dplyr)
+library(purrr)
+library(knitr)
+library(kableExtra)
+source("Inconsistency_downgrades.R")
+```
+
+```{r, echo = FALSE}
+# Calculate pairwise Jaccard index for each dataset and add to GRADE dataframe
+GRADE_results$Jaccard <- mapply(function(review_type, version_date, outcome) {
+  # subset primary_data
+  data <- primary_data %>% 
+    filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome & Weight != 0)
+  # run pairwise_Jaccard()
+  pairwise_Jaccard(
+    CI_lb_col = as.numeric(data$`CI start`),
+    CI_ub_col = as.numeric(data$`CI end`)
+  )
+},
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome)
+
+# Calculate proportion of estimates that are either side of 0
+GRADE_results$est_var <- mapply(function(review_type, version_date, outcome) {
+  # subset primary_data
+  data <- primary_data %>% 
+    filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome & Weight != 0)
+  # run estimate_variation() with differing thresholds depending on ratio or difference
+  if (is.na(data$`Experimental cases`[1])) {
+    estimate_variation(
+      estimates = as.numeric(data$Mean)
+    )
+  } else {
+    estimate_variation(
+      threshold = 1,
+      estimates = as.numeric(data$Mean)
+    )
+  }
+},
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome)
+
+# Display results
+knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgrade Inconsistency", "Jaccard", "est_var")) %>% arrange(est_var, Jaccard), digits = 2)
+```
+
+Generally lower Jaccard values to match to reviews that downgrading for inconsistency, however, they are not 'clumped' together to give a satisfactory default threshold. Looking at how the estimates varied didn't give a clear answer either, all studies with the lowest score (50%) didn't downgrade, yet one study with the highest score (100%) did downgrade. There could be reviewer differences happening, in particular regarding number of studies and other thresholds.
+
+### Exploring instances where downgraded for inconsistency
+
+To give some more context to the above results, let's take a closer look at the outcomes that were downgraded by 1 level for inconsistency by the reviewers.
+
+-   Systemic corticosteroids for COVID-19 on mortality as 120 days. 67% of studies were on one side of the threshold, and a Jaccard index of 0.03. Review just simply says they downgrading it due to inconsistency, with no details on specifics.
+
+-   Antibiotics for COVID-19 on improvement. 67% of studies were on one side of the threshold, and a Jaccard index of 0.18. Reason was specified: "... three studies contributed heterogeneous results (I squared = 49%). One study favoured standard of care alone and the other two showed no difference between study arms."
+
+-   Remdesivir for COVID-19 on adverse events (August 2021 version). 67% of studies were on one side of the threshold, and a Jaccard index of 0.24. Stated that downgraded "because of statistical heterogeneity (I squared = 77%)".
+
+-   Adverse events regarding treatment for non-small cell lung cancer. All studies were on one side of the threshold, but had a Jaccard index of 0.34. Only detail found was "...because of inconsistency of results and a high heterogeneity score".
+
+From looking at the Cochrane reviews obtained for this exercise, it doesn't seem that they can be used to set default values. It seems that I squared values were most often use to assess inconsistency, however, using this solely is outdated and always comes with warning - the core GRADE methods focus on overlap and variation instead. Furthermore, it seems to be subjective as there were no patterns (as partially seen with other domains) and some cases where they weren't downgraded really seem like they should have been based on the scores (e.g., 50% of studies on one side and a Jaccard index of 0.07).
+
+Based on subjective instinct, I'll suggest the below defaults.
+
+::: callout-important
+## Proposed thresholds
+
+From experience, reviews only ever downgraded by one level. As the variation in estimates is more indicative of a change in conclusions, I propose the following threshold structure:
+
+-   If the variation in estimates is 0.8 or higher (i.e., fewer than 1 in 5 'disagree'), then don't downgrade for inconsistency (i.e., the level of overlap doesn't matter). If it is below 0.8, then consider the overlap:
+
+    -   If the Jaccard index is lower than 0.4, then downgrade by one level for inconsistency (based on previous reviews).
+
+The autoadjust option will work by first adjusting the estimate variation, and then the Jaccard index.
+:::
+
 ## Subgroup consideration
+
+GRADE guidance suggests that when inconsistency is due to known variables, that the results should be presented by such subgroupings, and inconsistency to be assessed within each group. There isn't a subgroup option within the inconsistency function itself, however, when combining all the functions together to create the 'main' function, a subgroup option will be available (as it's assumed that the reviewers already know of variables that result in inconsistency).
+
+# Publication bias
+
+The following criteria were encouraged by both Stewart et al[@stewart2015] and GRADE guidance[@schünemann2013]:
+
+1.  Discrepancies between published and unpublished data
+
+2.  Industry influence
+
+3.  Search integrity
+
+4.  Funnel plot statistics
+
+The first three points are unlikely to change across a living review and are very nuanced, as such, they will simply be yes/no questions as per indirectness. To make a start, we'll just look at funnel plot statistic where there are 5 or more studies. We can use either the Cochrane examples of Stewart et al[@stewart2015] network thresholds to define a default threshold.
+
+Let's see what the Egger's test statistic is for each dataset we have.
+
+```{r, echo = FALSE}
+# Calculate Egger's test for each dataset and add to GRADE dataframe
+GRADE_results$Eggers <- mapply(function(review_type, version_date, outcome) {
+  # subset primary_data
+  data <- primary_data %>% 
+    filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome & Weight != 0)
+  # Transform to rma object
+  if (is.na(data$`Experimental cases`[1])) {
+    data <- escalc(measure = "MD", m1i = as.numeric(`Experimental mean`), m2i = as.numeric(`Control mean`), n1i = as.numeric(`Experimental N`), n2i = as.numeric(`Control N`), sd1i = as.numeric(`Experimental SD`), sd2i = as.numeric(`Control SD`), data = data)
+  } else {
+    data <- escalc(measure = "RR", ai = as.numeric(`Experimental cases`), ci = as.numeric(`Control cases`), n1i = as.numeric(`Experimental N`), n2i = as.numeric(`Control N`), data = data)
+  }
+  # Check there are at least 5 studies
+  n <- nrow(data)
+  if (n < 5) {
+    NA
+  } else {
+    # Calculate funnel plot statistic (Egger's)
+    res <- metafor::rma(data = data, yi = yi, vi = vi)
+    test_info <- metafor::regtest(res, model = "lm", predictor = "sei")
+    test_info$pval
+  }
+},
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome)
+
+# Display results
+knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgrade Publication bias", "Eggers")) %>% arrange(Eggers), digits = 2)
+```
+
+Of the reviews that did have 5 or more studies, all of those with a p-value below 0.85 weren't downgraded, but one that was above 0.85 (0.86) was downgraded for publication bias. This was the topic of serious adverse events for convalescent plasma (Feb 2023 version). Normally you would expect a threshold of 0.95, but the reviewers stated they suspected publication bias "...because safety outcomes were assessed and reported in most studies for convalescent plasma group only" - so this was due to one of the other factors (they state that they intended to use p \< 0.1 as significance). Adverse events was also downgraded for publication bias even though it had less than 5 studies (May 2021 version) due to the same reasons as above.
+
+We will set the **default threshold to be a p-value of 0.9**. However, the final function needs to be able to incorporate downgrading for the other trigger questions.
 
 # References
 
