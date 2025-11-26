@@ -83,9 +83,10 @@ estimate_variation <- function(
   
 }
 
-#' @param CI_lb_col Column of data that refer to the CI lower bound (in log-form for ratios)
-#' @param CI_ub_col Column of data that refers to the CI upper bound (in log forms for ratios)
-#' @param estimates Column of data that refers to the point estimates of all studies (in log forms for ratios)
+#' @param data Dataset containing information
+#' @param CI_lb_col Column name that refer to the CI lower bound (in log-form for ratios)
+#' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
+#' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param null_effect Value for which to assess the point estimates against
 #' @param Jaccard_threshold Threshold for the Jaccard index to suggest inconsistency
 #' @param variation_threshold Threshold for the variation in estimates to suggest inconsistency
@@ -98,6 +99,7 @@ estimate_variation <- function(
 #'                          variation_threshold = threshold value used (may differ if autoadjust was used)
 
 inconsistency_downgrades <- function(
+    data,
     CI_lb_col,
     CI_ub_col,
     estimates,
@@ -142,11 +144,11 @@ inconsistency_downgrades <- function(
   
   # Obtain Jaccard index and variation in estimates
   Jaccard <- pairwise_Jaccard(
-    CI_lb_col = CI_lb_col,
-    CI_ub_col = CI_ub_col
+    CI_lb_col = data[[CI_lb_col]],
+    CI_ub_col = data[[CI_ub_col]]
   )
   var_est <- estimate_variation(
-    estimates = estimates
+    estimates = data[[estimates]]
   )
   
   # Assess whether to downgrade

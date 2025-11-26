@@ -1,0 +1,146 @@
+---
+title: "Certainty Tool Key Details"
+author: "Clareece Nevill"
+format: docx
+editor: visual
+bibliography: references-certainty-summary.bib
+csl: american-medical-association.csl
+number-sections: true
+crossref:
+  labels: arabic        
+  subref-labels: alpha a
+  chapters: true
+---
+
+This document gives the key details of the certainty tool. For each domain, the tool will predict the number of levels the evidence is downgraded. This will be based on pre-defined thresholds that would have been used in previous/current updates of an LSR (i.e., decided a priori). The tool then compares its estimated GRADE rating against the current/previous rating, and indicate whether any of the domains may change. Unless otherwise specified, the default thresholds used throughout the tool were based on data from other Cochrane LSRs. Specifically, using the data from each review to calculate the respective scores used within each domain that need a threshold, and comparing the scores with the number of downgrading levels reported by the review. Furthermore, all of the elements utilised within this certainty tool follow the core GRADE approach (a simplified approach for conducting GRADE for simple pairwise analyses)[@guyatt2025a]. As a reminder, to get a first version of this tool, I am assuming that datasets are of RCTs and the analysis is a simple pairwise analysis (i.e., one intervention and one comparator). Furthermore, it assumes that dichotomous outcomes are risk ratios (RR) and continuous outcomes are mean difference (MD).
+
+# Risk of Bias
+
+Core GRADE users are encouraged to ascertain the overall risk of bias for each study and downgrade if studies with high risk of bias dominate[@guyatt2025b]. The Cochrane guidance also talks about the proportion of information that is at various levels of risk, and whether any potential bias will likely affect results. To encompass these approaches, the tool calculates the weighted average risk of bias, using the weightings that would be used for the respective meta-analysis. A study of high risk of bias with a small weighting will unlikely affect the results; this will be reflected in the fact that it's high 'score' will not contribute highly to the weighted average score.
+
+The score ranges from 1 (where all studies are of low risk of bias) to 3 (where all studies are of high risk of bias). A suggested default threshold of 1.5 was chosen from calculating the score from a selection of Cochrane reviews, and noting at what values the review groups started to downgrade. If the weighted average is 1.5 or higher, the tool will predict a downgrading of 1 level. By default, there is no threshold for downgrading 2 levels as this was rarely seen (even in cases where all studies were deemed to be high risk).
+
+There is discussion regarding the type of tools that are available and how well they perform, ease of use, and whether they encompass other domains of GRADE[@guyatt2025b]. Those decisions need to be made by the review team and considered before using this tool. The tool uses overall risk of biases from each study (low, some concerns, or high), however, there is an option for it to predict the overall rating for each study if users can provide domain ratings instead (i.e., ROB-1). The overall rating is estimated using the network probabilities from Stewart et. al[@stewart2015]. However, users are advised to use this option with caution.
+
+An area of core GRADE that hasn't been **explicitly** considered here is checking the direction of the bias (i.e., whether the biased studies are responsible for any apparent effects, or apparent lack of effect)[@guyatt2025b]. Implementing this would be a useful extension to improve the accuracy of the tool.
+
+::: callout-tip
+## Risk of Bias Summary
+
+-   If weighted average is less than 1.5, do not rate down
+
+-   If weighted average is 1.5 or higher, rate down by one level
+:::
+
+# Imprecision
+
+Core GRADE users are encouraged to consider whether the confidence interval (CI) of the pooled effect includes both harm and benefit. If the CI is only in one area (e.g., entirely in clinical benefit), then core GRADE users are also encouraged to consider rating down if the total sample size or total number of events is small[@guyatt2025]. As there are many discussions around how to calculate and choose an optimal sample size, I won't consider this element. However, I will look at the width of the confidence interval, and the total number of events for dichotomous outcomes.
+
+Before using the tool, the review group need to decide what is a meaningful benefit or harm. These thresholds will then divide the effect size into three regions: no meaningful effect, meaningful benefit, and meaningful harm. Currently, this is set to be symmetrical (e.g., for RR, one could have regions of less than 0.75, 0.75 to 1.25, and more than 1.25). However, if that is unlikely, we can change the tool options. The defaults are +/- 0.25 for RR, and +/- 0.5 for MD, which were suggested defaults found in the literature. The tool then downgrades by one level if the CI covers two of these regions, and two levels if it covers all three regions.
+
+For dichotomous outcomes, the tool will also consider the total number of events. The defaults, that are currently used in the e-cigarette review, are that less than 300 events should lead to downgrading by one level, and less than 100 events downgrade by two levels. However, each review group would be encouraged to consider what they deem as a small number of events as this will vary, especially for rare outcomes. As there are two criteria for downgrading dichotomous outcomes, the maximum suggested number of levels to downgrade will be taken as this encompasses any potential inconsistency identified.
+
+::: callout-tip
+## Imprecision Summary
+
+-   Split the effect size into three regions of no meaningful effect, and meaningful benefit and harm.
+
+    -   If the confidence interval covers two regions, downgrade one level
+
+    -   If the confidence interval covers all three regions, downgrade two levels
+
+-   Consider the total number of events across the review
+
+    -   If there are \< 300 events, downgrade one level
+
+    -   If there are \< 100 events, downgrade two levels
+
+-   For dichotomous outcomes, take the maximum number of levels.
+:::
+
+# Inconsistency
+
+In this first version of the tool, I am restricting dichotomous outcomes to be RR, and continuous outcomes to be MD. This follows the advise from GRADE, that is, it's ideal to consider absolute effects, however, due to the ubiquitous inconsistency in absolute effects for dichotomous outcomes, identifying inconsistency of relative effects is of importance[@guyatt2025c].
+
+Core GRADE users are encouraged to make a visual assessment of the following to assess inconsistency: the magnitude of differences in point estimates, any overlap of CIs, and the relation of study estimates to a user-specified threshold[@guyatt2025c]. The tool will give quantitative measures to the latter two assessments. The first measure will not be formally assessed due to the following reasons: (i) it would be hard to set a threshold for 'magnitude of difference', especially as it will vary for each outcome; (ii) a lack of overlapping CIs and differing point estimates in relation to a threshold will likely correlate with a larger difference in point estimates - i.e., whether the latter two criteria are met likely indicates whether the first criterion is met; (iii) the core GRADE guidance indicates that review groups can use any of the visual assessments (i.e., it doesn't specify the need for all three).
+
+Based on a designated value of importance (given by the user), the tool calculates the proportion of study estimates that were on one side of the threshold. The resulting value will range from 50% (studies are equally spread either side of the threshold) to 100% (all studies are on one side of the threshold). The default threshold will simply be the null value (0 for differences, 1 for ratios).
+
+To measure the overlap of CIs quantitatively, the average pairwise Jaccard index will be used. The Jaccard index is the intersection of sets divided by the union of sets[@real1996]:
+
+$$ J(S_a, S_b) = \frac{|S_a \cap S_b|}{|S_a \cup S_b|} $$
+
+This can be extended to intervals, by dividing the common range by the combined range. As we often have more than two intervals, we're interested in the overall similarity (rather than the strict overlap of all CIs). We therefore use the pairwise average Jaccard Index[@fan2016]:
+
+$$ \bar{J} = \frac{2}{n(n-1)} \sum_a \sum_{b \ne a} J(S_a, S_b) $$
+
+where $n$ is the number of CIs. To calculate the intersection and union of two sets of CIs:
+
+$$ CI_a = [LB_a, UB_a], CI_b = [LB_b, UB_b] $$
+
+$$ |CI_a \cap CI_b| = max(0, min(UB_a, UB_b) - max(LB_a, LB_b)) $$
+
+$$ |CI_a \cup CI_b| = max(UB_a, UB_b) - min(LB_a, LB_b) $$
+
+However, confidence intervals can be negative (especially when on the log scale, which is necessary to ensure symmetry). To take into account the fact that values can be negative, we will transform all the CIs to be positive (this will still give an equivalent Jaccard Index as its standardised). To do this, we'll take the smallest lower bound, and if it's negative, add the modulus of that value to all bounds. Without this step, when the intersection of the two intervals lies in the negative space, there is no way to differentiate the actual intersection from no intersection. The average pairwise Jaccard index ranges from 0 (no overlap) to 1 (all CIs are identical).
+
+Using past Cochrane LSRs was not as useful for setting default values for these measures as it was for other domains. This was due to there being no obvious pattern and it often seemed that $I^2$ was used (which is always advised to be used with caution). Instead, the following default values were mostly chosen based on intuition. Any lack of overlap in CIs will likely not be cause for concern if the point estimates are all on one side of a threshold. As such, the tool considers the variation in point estimates first (with a threshold of 0.8 or higher indicating no concern). If the variation value is less than 0.8, the tool then considers the average pairwise Jaccard index, and will rate down for inconsistency if it is less than 0.4 (this value was chosen as all the Cochrane reviews that did downgrade for inconsistency had a index value less than 0.4). Further work to obtain more evidence-based default values would be desired.
+
+::: callout-tip
+## Inconsistency Summary
+
+-   If the variation in estimates is 0.8 or higher (i.e., fewer than 1 in 5 'disagree'), then don't downgrade for inconsistency (i.e., the level of overlap doesn't matter). If it is below 0.8, then consider the overlap:
+
+    -   If the Jaccard index is lower than 0.4, then downgrade by one level for inconsistency.
+:::
+
+# Publication bias
+
+Core GRADE users are encouraged to consider the following areas for assessing publication bias: (i) funnel plot asymmetry/statistics, (ii) industry influence, (iii) search integrity[@guyatt2025b]. The tool considers all three of these areas.
+
+For funnel plot asymmetry, the tool calculates the commonly used Egger's test, with a default threshold of p \< 0.1 indicating publication bias. This will only be calculated if there are at least 10 studies for the review outcome. However, as there are limitations in such a statistical measure, the review group will still be asked about industry influence and search integrity. Users enter into the tool whether there exists any industry influence and whether their search was comprehensive enough to identify studies from multiple sources.
+
+::: callout-tip
+## Publication bias Summary
+
+If any of the below criteria are met, downgrade one level.
+
+-   Where there are 10 or more studies, the respective Egger's test gives a p-value of \< 0.1.
+
+-   There is likely to be industry influence on relevant studies.
+
+-   The search strategy is not deemed comprehensive and likely to miss 'pockets' of studies, downgrade one level.
+:::
+
+# Indirectness
+
+There are two forms of indirectness: (i) having to use indirect studies (e.g., for a NMA or due to lack of direct evidence), (ii) included studies do not match the review question (i.e., PICOs don't match). For simplicity, the tool only considers the latter form of indirectness (which is also what the core GRADE guidelines focus on[@guyatt2025d]).
+
+Due to the nature of this domain, there will be no quantitative elements, and instead, the tool will have the following prompt questions for the user to answer. As the researchers would have already completed data extraction at the point of using this tool, it is assumed they will have knowledge regarding the overall PICOs of the studies.
+
+-   Are the populations presented in the current evidence so much more restrictive than the target population of the review that they're likely to affect the magnitude of effect substantially? If so, is it serious or very serious?
+
+-   Are the interventions that have been studied in the current pool of evidence more restrictive than the target interventions of the review? If so, is it serious or very serious?
+
+-   Are the comparators that have been included in the current studies more restrictive than the target comparator(s) of the review? If so, is it serious or very serious?
+
+-   Are the outcomes that are presented in the current evidence more restrictive than the target outcomes of the review? If so, is it serious or very serious?
+
+The questions are not to be answered on their own but as a collective as the judgement of whether to downgrade due to indirectness is to be done based on the combined effect of the areas considered above[@guyatt2011]. As such, the user will simply be asked to judge the evidence based on the prompt questions, as to whether any problems identified need to be rates down by two, one, or no levels.
+
+# Upgrading
+
+There are three criteria that can be used to up-grade an outcome:
+
+-   Large effects
+
+-   Clear dose-response relationship
+
+-   Accounting for confounding and residual bias that would still have an effect
+
+However, only observational studies with no major threats to validity (i.e. that have not been downgraded) can be upgraded. As we will be focusing on RCTs in the first instance, we will not consider these elements initially.
+
+# References
+
+::: {#refs}
+:::

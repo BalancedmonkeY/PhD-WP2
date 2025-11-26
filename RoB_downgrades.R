@@ -190,11 +190,11 @@ weighted_RoB <- function(
               "some concerns" = 2,
               "high" = 3)
   data <- data %>%
-    mutate(RoB_value = lookup[.data[[overall_rob]]])
+    mutate(RoB_value = lookup[data[[overall_rob]]])
   
   # Calculate weighted average
   data <- data %>%
-    mutate(weighted_RoB = RoB_value * as.numeric(.data[[weights]]))
+    mutate(weighted_RoB = RoB_value * as.numeric(data[[weights]]))
   weighted_average <- sum(data[["weighted_RoB"]]) / sum(as.numeric(data[[weights]][data[["RoB_value"]] != 0]))
   
   

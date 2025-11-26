@@ -5,8 +5,9 @@
 library(metafor)
 
 #' @param data Dataset containing information (including variance/standard error, and on log scale for ratios) as calculated by metafor escalc() command
+#' @param estimates Column name for study estimates
+#' @param variances Column name for study variances
 #' @param threshold Threshold value of funnel plot stat that means downgrading by one level
-#' @param descrepancies Logical argument for whether there exist discrepancies between published and unpublished data
 #' @param industry Logical argument for whether there exists industry influence
 #' @param search Logical argument for whether there are concerns regarding the search integrity
 #' @param auto_adjust Logical parameter to indicate whether to automatically adjust the thresholds based on previous versions of the review
@@ -17,8 +18,9 @@ library(metafor)
 
 pubbias_downgrades <- function(
     data,
+    estimates,
+    variances,
     threshold = 0.9,
-    discrepancies = FALSE,
     industry = FALSE,
     search = FALSE,
     auto_adjust = FALSE,
@@ -44,13 +46,13 @@ pubbias_downgrades <- function(
     }
     
     # Calculate funnel plot statistic (Egger's)
-    res <- metafor::rma(data = data, yi = yi, vi = vi)
+    res <- metafor::rma(data = data, yi = estimates, vi = variances)
     test_info <- metafor::regtest(res, model = "lm", predictor = "sei")
     stat <- test_info$pval
   }
   
   # Downgrade
-  if (stat >= threshold | discrepancies | industry | search) {
+  if (stat >= threshold | industry | search) {
     levels = 1
   } else {
     levels = 0
