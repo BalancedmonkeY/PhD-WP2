@@ -216,28 +216,26 @@ source("RoB_downgrades.R")
 ```{r, echo = FALSE}
 
 # Read in info from all datasets
-primary_data <- readxl::read_excel("Datasets/primary_info.xlsx", sheet = "Studies")
+primary_data <- read.csv("datasets.csv")
 GRADE_results <- readxl::read_excel("Datasets/primary_info.xlsx", sheet = "GRADE")
-primary_data$Weight[primary_data$Weight == "NA" | is.na(primary_data$Weight)] <- "0"  # Where there is no weight associated, specify it as zero.
-primary_data$`other bias`[primary_data$`other bias` == "Unclear risk"] <- "High risk"
 
 # Calculate average for each dataset and add to GRADE dataframe
 GRADE_results$RoB_avg <- mapply(function(review_type, version_date, outcome, Rob_tool_used) {
   # subset primary_data
   data <- primary_data %>% 
     filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome)
-  # run RoB_downgrades()
+  # run weighted_RoB()
   result <- weighted_RoB(
     data = data,
     rob_tool = Rob_tool_used,
-    overall_rob = "Overall bias",
-    random_selection = "random sequence generation (selection bias)",
-    allocation_selection = "allocation concealment (selection bias)",
-    performance = "performance bias",
-    detection = "detection bias",
-    attrition = "attrition bias",
-    reporting = "reporting bias",
-    other = "other bias",
+    overall_rob = "Overall.bias",
+    random_selection = "random.sequence.generation..selection.bias.",
+    allocation_selection = "allocation.concealment..selection.bias.",
+    performance = "performance.bias",
+    detection = "detection.bias",
+    attrition = "attrition.bias",
+    reporting = "reporting.bias",
+    other = "other.bias",
     weights = "Weight"
   )
   # return average grade
@@ -381,7 +379,7 @@ GRADE_results$total_events <- mapply(function(review_type, version_date, outcome
     # run sum_events()
     sum_events(
       data = data,
-      event_cols = c("Experimental cases", "Control cases")
+      event_cols = c("Experimental.cases", "Control.cases")
     )
   } else {
     NA
@@ -394,12 +392,7 @@ GRADE_results$CI <- mapply(function(review_type, version_date, outcome, measure,
   data <- primary_data %>% 
     filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome)
   # run meta-analysis
-  if (measure == 'RR') {
-    rma_df <- metafor::escalc(data = data, ai = as.numeric(`Experimental cases`), ci = as.numeric(`Control cases`), n1i = `Experimental N`, n2i = `Control N`, measure = measure)
-  } else if (measure == 'MD') {
-    rma_df <- metafor::escalc(data = data, n1i = `Experimental N`, n2i = `Control N`, m1i = as.numeric(`Experimental mean`), m2i = as.numeric(`Control mean`), sd1i = as.numeric(`Experimental SD`), sd2i = as.numeric(`Control SD`), measure = measure)
-  }
-  meta <- metafor::rma(data = rma_df, yi = yi, vi = vi, measure = measure, method = model)
+  meta <- metafor::rma(data = data, yi = yi, vi = vi, measure = measure, method = model)
   if (measure == 'RR') {
     paste0(round(exp(meta$ci.lb), 2), ", ", round(exp(meta$ci.ub), 2))
   } else {
@@ -410,15 +403,15 @@ GRADE_results$CI <- mapply(function(review_type, version_date, outcome, measure,
 GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure, GRADE_results$Model)
 
 # Predict downgrading levels based on the information
-GRADE_results$imprecision_levels <- mapply(function(total_events, CI) {
+GRADE_results$imprecision_levels <- mapply(function(total_events, CI, measure) {
   
   # predict number of levels to downgrade by
   imprecision_downgrades(
-    total_events = total_events, CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]), CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
+    outcome = measure, total_events = total_events, CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]), CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
   )
 
 },
-GRADE_results$total_events, GRADE_results$CI)
+GRADE_results$total_events, GRADE_results$CI, GRADE_results$Measure)
 
 # Display results
 knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgrade Imprecision", "total_events", "CI", "imprecision_levels")) %>% arrange(total_events), digits = 2)
@@ -622,10 +615,6 @@ Based on a designated value of importance, simply calculate the proportion of st
 Lets calculate the average pairwise Jaccard index and variation proportion for each review outcome.
 
 ```{r, echo = FALSE, output = FALSE}
-library(dplyr)
-library(purrr)
-library(knitr)
-library(kableExtra)
 source("Inconsistency_downgrades.R")
 ```
 
@@ -637,30 +626,23 @@ GRADE_results$Jaccard <- mapply(function(review_type, version_date, outcome) {
     filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome & Weight != 0)
   # run pairwise_Jaccard()
   pairwise_Jaccard(
-    CI_lb_col = as.numeric(data$`CI start`),
-    CI_ub_col = as.numeric(data$`CI end`)
+    CI_lb_col = as.numeric(data$`CI.start`),
+    CI_ub_col = as.numeric(data$`CI.end`)
   )
 },
 GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome)
 
 # Calculate proportion of estimates that are either side of 0
-GRADE_results$est_var <- mapply(function(review_type, version_date, outcome) {
+GRADE_results$est_var <- mapply(function(review_type, version_date, outcome, measure) {
   # subset primary_data
   data <- primary_data %>% 
     filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome & Weight != 0)
-  # run estimate_variation() with differing thresholds depending on ratio or difference
-  if (is.na(data$`Experimental cases`[1])) {
-    estimate_variation(
-      estimates = as.numeric(data$Mean)
-    )
-  } else {
-    estimate_variation(
-      threshold = 1,
-      estimates = as.numeric(data$Mean)
-    )
-  }
+  # run estimate_variation() 
+  estimate_variation(
+    estimates = data$yi
+  )
 },
-GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome)
+GRADE_results$Review, GRADE_results$Version, GRADE_results$Outcome, GRADE_results$Measure)
 
 # Display results
 knitr::kable(GRADE_results %>% select(c("Review", "Version", "Outcome", "Downgrade Inconsistency", "Jaccard", "est_var")) %>% arrange(est_var, Jaccard), digits = 2)
@@ -722,12 +704,6 @@ GRADE_results$Eggers <- mapply(function(review_type, version_date, outcome) {
   # subset primary_data
   data <- primary_data %>% 
     filter(Review == review_type & as.Date(Added) <= as.Date(version_date) & Outcome == outcome & Weight != 0)
-  # Transform to rma object
-  if (is.na(data$`Experimental cases`[1])) {
-    data <- escalc(measure = "MD", m1i = as.numeric(`Experimental mean`), m2i = as.numeric(`Control mean`), n1i = as.numeric(`Experimental N`), n2i = as.numeric(`Control N`), sd1i = as.numeric(`Experimental SD`), sd2i = as.numeric(`Control SD`), data = data)
-  } else {
-    data <- escalc(measure = "RR", ai = as.numeric(`Experimental cases`), ci = as.numeric(`Control cases`), n1i = as.numeric(`Experimental N`), n2i = as.numeric(`Control N`), data = data)
-  }
   # Check there are at least 5 studies
   n <- nrow(data)
   if (n < 5) {

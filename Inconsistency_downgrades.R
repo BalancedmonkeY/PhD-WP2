@@ -90,13 +90,7 @@ estimate_variation <- function(
 #' @param null_effect Value for which to assess the point estimates against
 #' @param Jaccard_threshold Threshold for the Jaccard index to suggest inconsistency
 #' @param variation_threshold Threshold for the variation in estimates to suggest inconsistency
-#' @param auto_adjust Logical parameter to indicate whether to automatically adjust the thresholds based on previous versions of the review
-#' @param prev_levels The number of levels the evidence was downgraded due to inconsistency in the previous version
-#' @param prev_Jaccard Jaccard index for previous update
-#' @param prev_est_var Variation in estimates score for previous update
-#' @return list containing: levels = Number of levels the evidence is likely to be downgraded due to inconsistency (0 or 1)
-#'                          Jaccard_threshold = threshold value used (may differ if autoadjust was used)
-#'                          variation_threshold = threshold value used (may differ if autoadjust was used)
+#' @return levels = Number of levels the evidence is likely to be downgraded due to inconsistency (0 or 1)
 
 inconsistency_downgrades <- function(
     data,
@@ -105,42 +99,8 @@ inconsistency_downgrades <- function(
     estimates,
     null_effect = 0,
     Jaccard_threshold = 0.4,
-    variation_threshold = 0.8,
-    autoadjust = FALSE,
-    prev_levels,
-    prev_Jaccard,
-    prev_est_var
+    variation_threshold = 0.8
 ) {
-  
-  # Autoadjustment if required
-  if (auto_adjust) {
-    if (prev_levels == 1) {
-      if (prev_est_var >= variation_threshold) {
-        variation_threshold <- ceiling((prev_est_var+0.01)*20)/20
-        if (variation_threshold >= 1) { # may happen if the previous est_var equaled 1 exactly
-          variation_threshold = 1
-        }
-        if (prev_est_var >= 0.95) { # i.e., threshold will become 1 which will never lead to a downgrading
-          if (prev_Jaccard >= Jaccard_threshold) {
-            Jaccard_threshold <- ceiling((prev_Jaccard+0.01)*20)/20
-          }
-        }
-      } else {
-        if (prev_Jaccard >= Jaccard_threshold) {
-          Jaccard_threshold <- ceiling((prev_Jaccard+0.01)*20)/20
-        }
-      }
-    } else if (prev_levels == 0) {
-      if (prev_est_var < variation_threshold) {
-        variation_threshold <- floor((prev_est_var)*20)/20
-        if (prev_est_var < 0.55) { # i.e., threshold will become 0.5 which is is the lowest possible and indicative of checking the Jaccard
-          if (prev_Jaccard < Jaccard_threshold) {
-            Jaccard_threshold <- floor((prev_Jaccard)*20)/20
-          }
-        } 
-      }
-    }
-  }
   
   # Obtain Jaccard index and variation in estimates
   Jaccard <- pairwise_Jaccard(
@@ -160,8 +120,6 @@ inconsistency_downgrades <- function(
     levels = 1
   }
   
-  return(list(levels = levels,
-              Jaccard_threshold = Jaccard_threshold,
-              variation_threshold = variation_threshold))
+  return(levels = levels)
   
 }
