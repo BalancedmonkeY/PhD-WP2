@@ -21,13 +21,13 @@ weighted_RoB <- function(
     data, 
     rob_tool,
     overall_rob,
-    random_selection,
-    allocation_selection,
-    performance,
-    detection,
-    attrition,
-    reporting,
-    other,
+    random_selection = NA,
+    allocation_selection = NA,
+    performance = NA,
+    detection = NA,
+    attrition = NA,
+    reporting = NA,
+    other = NA,
     weights
 ) {
   
@@ -171,8 +171,10 @@ weighted_RoB <- function(
   } else if (rob_tool == 2 & max(is.na(data[[overall_rob]])) == 1) {
     print("A value is needed for the overall_rob column")
   } else if (max(is.na(data[[overall_rob]])) == 0 & rob_tool %in% c(1,2)) {
+    cols <- c(random_selection, allocation_selection, performance, detection, attrition, reporting, other, overall_rob)
+    cols <- cols[!is.na(cols)]   # remove any NA column names
     data <- data %>%
-      mutate(across(all_of(c(random_selection, allocation_selection, performance, detection, attrition, reporting, other, overall_rob)),
+      mutate(across(any_of(cols),
                     ~ gsub(" risk", "", stringr::str_to_lower(.x))))
   } 
   else {

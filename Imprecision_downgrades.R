@@ -24,43 +24,44 @@ sum_events <- function(
 }
 
 
-#' @param CI_ub Upper bound of 95% CI of pooled effect (on relative risk scale)
-#' @param CI_lb Lower bound of 95% CI of pooled effect (on relative risk scale)
-#' @param threshold Threshold to represent meaningful effect, in terms of a percentage change in relative risk
+#' @param CI_ub Upper bound of 95% CI of pooled effect (log scale if ratio)
+#' @param CI_lb Lower bound of 95% CI of pooled effect (log scale if ratio)
+#' @param threshold_pos Threshold to represent meaningful positive effect (log scale if ratio)
+#' @param threshold_neg Threshold to represent meaningful negative effect (log scale if ratio)
+#' @param outcome Type of outcome measure (RR or MD)
 #' @return interpretation_df -> A dataframe of the interpretation, made up of three columns with logical indicators
-CI_interpretation_bin <- function(
+CI_interpretation <- function(
     CI_ub,
     CI_lb,
-    threshold = 0.25
+    threshold_pos = NULL,
+    threshold_neg = NULL,
+    outcome
 ) {
+  
+  # Set defaults
+  if (is.null(threshold_pos)) {
+    if (outcome == "RR") {
+      threshold_pos <- log(1.25)
+    } else {
+      threshold_pos <- 0.5
+    }
+  } 
+  if (is.null(threshold_neg)) {
+    if (outcome == "RR") {
+      threshold_neg <- log(0.75)
+    } else {
+      threshold_neg <- -0.5
+    }
+  }
+
   
   # Initialise dataframe
   interpretation_df <- data.frame(neg.effect = 0, no.effect = 0, pos.effect = 0)
-  # Add 1 to columns where appropriate based on CI
-  if (CI_lb < 1-threshold) {interpretation_df$neg.effect <- 1} 
-  if (CI_ub > 1+threshold) {interpretation_df$pos.effect <- 1} 
-  if ((CI_ub >= 1-threshold) & (CI_lb <= 1+threshold)) {interpretation_df$no.effect <- 1}
   
-  return(interpretation_df)
-}
-
-
-#' @param CI_ub Upper bound of 95% CI of pooled effect (on mean difference scale)
-#' @param CI_lb Lower bound of 95% CI of pooled effect (on mean difference scale)
-#' @param threshold Threshold to represent meaningful effect, in terms of a mean difference (+/-)
-#' @return interpretation_df -> A dataframe of the interpretation, made up of three columns with logical indicators
-CI_interpretation_cont <- function(
-    CI_ub,
-    CI_lb,
-    threshold = 0.5
-) {
-  
-  # Initialise dataframe
-  interpretation_df <- data.frame(neg.effect = 0, no.effect = 0, pos.effect = 0)
   # Add 1 to columns where appropriate based on CI
-  if (CI_lb < 0-threshold) {interpretation_df$neg.effect <- 1} 
-  if (CI_ub > 0+threshold) {interpretation_df$pos.effect <- 1} 
-  if ((CI_ub >= 0-threshold) & (CI_lb <= 0+threshold)) {interpretation_df$no.effect <- 1}
+  if (CI_lb < threshold_neg) {interpretation_df$neg.effect <- 1} 
+  if (CI_ub > threshold_pos) {interpretation_df$pos.effect <- 1} 
+  if ((CI_ub >= threshold_neg) & (CI_lb <= threshold_pos)) {interpretation_df$no.effect <- 1}
   
   return(interpretation_df)
 }
@@ -70,9 +71,10 @@ CI_interpretation_cont <- function(
 #' @param total_events Total number of events across the review
 #' @param event_threshold_2 Threshold for number of events that will lead to downgrading 2 levels
 #' @param event_threshold_1 Threshold for number of events that will lead to downgrading 1 level
-#' @param CI_ub Upper bound of 95% CI of pooled effect
-#' @param CI_lb Lower bound of 95% CI of pooled effect
-#' @param CI_threshold Threshold to represent meaningful effect
+#' @param CI_ub Upper bound of 95% CI of pooled effect (log scale if ratio)
+#' @param CI_lb Lower bound of 95% CI of pooled effect (log scale if ratio)
+#' @param CI_threshold_pos Threshold to represent meaningful +ve effect
+#' @param CI_threshold_neg Threshold to represent meaningful -ve effect
 #' @return levels = Number of levels the evidence is likely to be downgraded due to imprecision (0, 1, or 2)
 
 imprecision_downgrades <- function(
@@ -82,32 +84,18 @@ imprecision_downgrades <- function(
     event_threshold_1 = 300,
     CI_lb,
     CI_ub,
-    CI_threshold = NULL
+    CI_threshold_pos = NULL,
+    CI_threshold_neg = NULL
 ) {
   
-  # Obtain respective threshold value for the interpretation data frame
-  if (!is.null(CI_threshold)) { # if user has specified
-    threshold <- CI_threshold
-  } else if (outcome == "RR") { # if dichotomous
-    threshold <- 0.25
-  } else { # if continuous
-    threshold <- 0.5
-  }
-  
   # Obtain interpretation data frame
-  if (outcome == "RR") {
-    interpretation_df <- CI_interpretation_bin(
-      CI_lb = CI_lb,
-      CI_ub = CI_ub,
-      threshold = threshold
-    )
-  } else {
-    interpretation_df <- CI_interpretation_cont(
-      CI_lb = CI_lb,
-      CI_ub = CI_ub,
-      threshold = threshold
-    )
-  }
+  interpretation_df <- CI_interpretation(
+    CI_lb = CI_lb,
+    CI_ub = CI_ub,
+    threshold_pos = CI_threshold_pos,
+    threshold_neg = CI_threshold_neg,
+    outcome = outcome
+  )
   
   # If dichotomous assess downgrading levels due to small number of events
   
@@ -123,13 +111,7 @@ imprecision_downgrades <- function(
   }
   
   # Assess downgrading levels due to interpretation coverage
-  if (sum(interpretation_df) == 3) {
-    interpretation_downgrade <- 2
-  } else if (sum(interpretation_df) == 2) {
-    interpretation_downgrade <- 1
-  } else {
-    interpretation_downgrade <- 0
-  }
+  interpretation_downgrade <- sum(interpretation_df) - 1
   
   # Take maximum number of levels downgraded of the two approaches (where present)
   if (outcome == "RR") {

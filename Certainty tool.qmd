@@ -407,7 +407,7 @@ GRADE_results$imprecision_levels <- mapply(function(total_events, CI, measure) {
   
   # predict number of levels to downgrade by
   imprecision_downgrades(
-    outcome = measure, total_events = total_events, CI_lb = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1]), CI_ub = as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2])
+    outcome = measure, total_events = total_events, CI_lb = log(as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[1])), CI_ub = log(as.numeric(stringr::str_split_fixed(CI, ",", n = 2)[2]))
   )
 
 },

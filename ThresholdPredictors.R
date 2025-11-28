@@ -14,6 +14,8 @@ RoB_threshold_finder <- function(
     prev_RoB_avg,
     prev_levels
 ) {
+  
+  suggested_threshold = NULL
 
   # increase threshold if not previously downgraded, but previous score was 1.5 or higher
   if (prev_levels == 0 & prev_RoB_avg >= 1.5) {
@@ -25,7 +27,11 @@ RoB_threshold_finder <- function(
     suggested_threshold <- floor(prev_RoB_avg*20)/20
   }
   
-  return(suggested_threshold = suggested_threshold)
+  if (!is.null(suggested_threshold)) {
+    return(suggested_threshold = suggested_threshold)
+  } else {
+    message("No new threshold is needed")
+  }
   
 }
 
@@ -46,17 +52,23 @@ Pubbias_threshold_finder <- function(
     prev_levels
 ) {
   
-  # increase threshold if not previously downgraded, but p-value was 0.9 or higher
-  if (prev_levels == 0 & prev_stat >= 0.9 & prev_industry == FALSE & prev_search == FALSE) {
-    suggested_threshold <- ceiling((prev_stat+0.01)*20)/20
+  suggested_threshold = NULL
+  
+  # decrease threshold if not previously downgraded, but p-value was less than 0.1
+  if (prev_levels == 0 & prev_stat < 0.1 & prev_industry == FALSE & prev_search == FALSE) {
+    suggested_threshold <- floor((prev_stat)*20)/20
   } 
   
-  # decrease threshold if previously downgraded, but p-value was less than 0.9
+  # increase threshold if previously downgraded, but p-value was 0.1 or higher
   else if (prev_levels == 1 & prev_stat < threshold & prev_industry == FALSE & prev_search == FALSE) {
-    suggested_threshold <- floor((prev_stat)*20)/20
+    suggested_threshold <- ceiling((prev_stat+0.01)*20)/20
   }
   
-  return(suggested_threshold = suggested_threshold)
+  if (!is.null(suggested_threshold)) {
+    return(suggested_threshold = suggested_threshold)
+  } else {
+    message("No new threshold is needed")
+  }
   
 }
 
@@ -75,6 +87,9 @@ Inconsistency_threshold_finder <- function(
     prev_est_var,
     prev_levels
 ) {
+  
+  suggested_variation = NULL
+  suggested_Jaccard = NULL
 
   # increase threshold if previously downgraded, but est_var was 0.8 or higher
   if (prev_levels == 1) {
@@ -112,10 +127,14 @@ Inconsistency_threshold_finder <- function(
     }
   }
   
-  return(list(
-    suggested_variation = suggested_variation,
-    suggested_Jaccard = suggested_Jaccard
-  ))
+  if (!is.null(suggested_variation) | !is.null(suggested_Jaccard)) {
+    return(list(
+      suggested_variation = suggested_variation,
+      suggested_Jaccard = suggested_Jaccard
+    ))
+  } else {
+    message("No new thresholds are needed")
+  }
   
 }
 
@@ -125,21 +144,26 @@ Inconsistency_threshold_finder <- function(
 
 #' @param outcome Outcome measure (RR or MD)
 #' @param prev_events Total number of events across the previous version
-#' @param prev_CI_ub Upper bound of 95% CI of previous pooled effect
-#' @param prev_CI_lb Lower bound of 95% CI of previous pooled effect
+#' @param prev_CI_ub Upper bound of 95% CI of previous pooled effect (log scale if ratio)
+#' @param prev_CI_lb Lower bound of 95% CI of previous pooled effect (log scale if ratio)
 #' @param prev_levels The number of levels the evidence was downgraded due to imprecision in the previous version
 #' @return list containing: suggested_event_threshold_1 = The suggested threshold for number of events (1 level)
 #'                          suggested_event_threshold_2 = The suggested threshold for number of events (2 levels)
-#'                          suggested_CI_threshold = The suggested threshold for forming meaningful regions to assess CI width
+#'                          suggested_CI_threshold_pos = The suggested threshold for forming meaningful +ve effect region to assess CI width
+#'                          suggested_CI_threshold_neg = The suggested threshold for forming meaningful -ve effect region to assess CI width
 
 Imprecision_threshold_finder <- function(
     outcome,
     prev_events,
     prev_CI_lb,
     prev_CI_ub,
-    prev_interpretation_df,
     prev_levels
 ) {
+  
+  suggested_event_threshold_1 = NULL
+  suggested_event_threshold_2 = NULL
+  suggested_CI_threshold_pos = NULL
+  suggested_CI_threshold_neg = NULL
 
   # Obtain downgrading levels due to each measure using default values
   # Total number of events
@@ -151,27 +175,16 @@ Imprecision_threshold_finder <- function(
     } else {
       prev_event_downgrade <- 0
     }
+  } else {
     prev_event_downgrade <- "NULL"
   }
   # CI width
-  if (outcome == "RR") {
-    prev_interpretation_df <- CI_interpretation_bin(
-      CI_lb = prev_CI_lb,
-      CI_ub = prev_CI_ub
-    )
-  } else {
-    prev_interpretation_df <- CI_interpretation_cont(
-      CI_lb = prev_CI_lb,
-      CI_ub = prev_CI_ub
-    )
-  }
-  if (sum(prev_interpretation_df) == 3) {
-    prev_interpretation_downgrade <- 2
-  } else if (sum(prev_interpretation_df) == 2) {
-    prev_interpretation_downgrade <- 1
-  } else {
-    prev_interpretation_downgrade <- 0
-  }
+  prev_interpretation_df <- CI_interpretation(
+    CI_lb = prev_CI_lb,
+    CI_ub = prev_CI_ub,
+    outcome = outcome
+  )
+  prev_interpretation_downgrade <- sum(prev_interpretation_df) - 1
   
   # Using imprecision_autoadjust_matrix, look-up action needed
   imprecision_autoadjust_matrix <- read.csv("imprecision_autoadjust_matrix.csv", header = TRUE)
@@ -179,37 +192,41 @@ Imprecision_threshold_finder <- function(
                  imprecision_autoadjust_matrix$Events == prev_event_downgrade &
                  imprecision_autoadjust_matrix$CI == prev_interpretation_downgrade)
   
-  # Apply corresponding action
-  # Event threshold 1
-  if (imprecision_autoadjust_matrix$Event.threshold.1[idx] == "Decrease") {
-    event_threshold_1 <- prev_events
-    event_threshold_2 <- round(prev_events/2, 1)
-  } 
-  # Event threshold 2
-  if (imprecision_autoadjust_matrix$Event.threshold.2[idx] == "Increase") {
-    event_threshold_2 <- prev_events + 1
-  } else if (imprecision_autoadjust_matrix$Event.threshold.2[idx] == "Decrease") {
-    event_threshold_2 <- prev_events
-  }
-  # CI threshold
-  if (outcome == "RR") {
-    null <- 1
-  } else {
-    null <- 0
-  }
-  if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Increase" & prev_levels == 0) {
-    threshold <- ceiling(max(null - prev_CI_lb, prev_CI_ub - null)*20)/20
-  } else if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Increase" & prev_levels == 1) {
-    threshold <- ceiling(min(null - prev_CI_lb, prev_CI_ub - null)*20)/20
-  } else if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Decrease" & prev_levels == 1) {
-    threshold <- floor((max(null - prev_CI_lb, prev_CI_ub - null)-0.01)*20)/20
-  } else if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Decrease" & prev_levels == 2) {
-    threshold <- floor((min(null - prev_CI_lb, prev_CI_ub - null)-0.01)*20)/20
+  # Apply corresponding action (if needed)
+  if (length(idx) > 0) {
+    # Event threshold 1
+    if (imprecision_autoadjust_matrix$Event.threshold.1[idx] == "Decrease") {
+      event_threshold_1 <- prev_events
+      event_threshold_2 <- round(prev_events/2, 1)
+    } 
+    # Event threshold 2
+    if (imprecision_autoadjust_matrix$Event.threshold.2[idx] == "Increase") {
+      event_threshold_2 <- prev_events + 1
+    } else if (imprecision_autoadjust_matrix$Event.threshold.2[idx] == "Decrease") {
+      event_threshold_2 <- prev_events
+    }
+    # CI threshold
+    if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Increase" & prev_levels == 0) {
+      threshold <- ceiling(max(-prev_CI_lb, prev_CI_ub)*20)/20
+    } else if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Increase" & prev_levels == 1) {
+      threshold <- ceiling(min(-prev_CI_lb, prev_CI_ub)*20)/20
+    } else if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Decrease" & prev_levels == 1) {
+      threshold <- floor((max(-prev_CI_lb, prev_CI_ub)-0.01)*20)/20
+    } else if (imprecision_autoadjust_matrix$CI.threshold[idx] == "Decrease" & prev_levels == 2) {
+      threshold <- floor((min(-prev_CI_lb, prev_CI_ub)-0.01)*20)/20
+    }
   }
   
-  return(list(suggested_event_threshold_1 = event_threshold_1,
-              suggested_event_threshold_2 = event_threshold_2,
-              suggested_CI_threshold = threshold))
+  if (!is.null(suggested_event_threshold_1) | !is.null(suggested_event_threshold_2) | !is.null(suggested_CI_threshold_pos) | !is.null(suggested_CI_threshold_neg)) {
+    return(list(suggested_event_threshold_1 = event_threshold_1,
+                suggested_event_threshold_2 = event_threshold_2,
+                suggested_CI_threshold_pos = threshold,
+                suggested_CI_threshold_neg = -threshold))
+  } else {
+    message("No new thresholds are needed")
+  }
+  
+  
   
 }
 

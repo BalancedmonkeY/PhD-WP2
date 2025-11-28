@@ -18,7 +18,7 @@ pubbias_downgrades <- function(
     variances,
     threshold = 0.9,
     industry = FALSE,
-    search = FALSE,
+    search = FALSE
 ) {
   
   # Check that there are at least 5 studies
@@ -30,13 +30,13 @@ pubbias_downgrades <- function(
   } else {
     
     # Calculate funnel plot statistic (Egger's)
-    res <- metafor::rma(data = data, yi = estimates, vi = variances)
+    res <- metafor::rma(yi = data[[estimates]], vi = data[[variances]])
     test_info <- metafor::regtest(res, model = "lm", predictor = "sei")
     stat <- test_info$pval
   }
   
   # Downgrade
-  if (stat >= threshold | industry | search) {
+  if (stat < threshold | industry | search) {
     levels = 1
   } else {
     levels = 0
