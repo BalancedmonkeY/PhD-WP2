@@ -13,12 +13,12 @@ library(metafor)
 library(progressr)
 library(rmeta)
 
-#' @param SS effect estimates of the current studies		
-#' @param seSS standard errors of the current studies
+#' @param SS effect estimates of the current studies (log scale if ratio)		
+#' @param seSS standard errors of the current studies (log scale if ratio)
 #' @param SSnew effect estimates of the new study(ies)
 #' @param seSSnew standard errors of the new study(ies)
 #' @param sig_level significance level
-#' @param method type of meta-analysis - "fixed" or "random"
+#' @param method type of meta-analysis - "EE" or "DL"
 #' @param outcome type of outcome measure - "OR", "RR", "RD", "MD", "SMD"
 #' @param ylim limits of the y axis	in form c(y1, y2) 
 #' @param xlim limits of the x axis in form c(x1, x2)
@@ -47,14 +47,16 @@ library(rmeta)
 #' @param rand.load TRUE/FALSE show percentage of computations complete when the random effects contours are calculated
 #' @return List containing the following: 
 #' threshold_result - a string containing a description of whether the threshold of the new analysis was met;
-#' threshold_plot - the extended funnel plot that visualises the threshold and whether it was met               
+#' threshold_plot - the extended funnel plot that visualises the threshold and whether it was met
+#' original_ma - rma object containing meta-analysis details of original dataset
+#' new_ma - ma object containing meta-analysis details of new dataset               
 InterpretationThreshold <- function(
     SS,
     seSS,
     SSnew,
     seSSnew,
     sig_level = 0.05,
-    method = 'fixed',
+    method = 'EE',
     outcome = 'RR',
     ylim = NULL,
     xlim = NULL,
@@ -92,11 +94,11 @@ InterpretationThreshold <- function(
   ci <- qnorm(1 - sig_level / 2)
   
   #Calculate current meta-analysis (using rma from {metafor})
-  current_meta <- metafor::rma(yi = SS, sei = seSS, method = ifelse(method == 'random', "DL", "EE"), level = (1 - sig_level), measure = outcome)
+  current_meta <- metafor::rma(yi = SS, sei = seSS, method = method, level = (1 - sig_level), measure = outcome)
   current_tau2 <- current_meta$tau2
   
   #Calculate updated meta-analysis (using rma from {metafor})
-  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = ifelse(method == 'random', "DL", "EE"), level = (1 - sig_level), measure = outcome)
+  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = method, level = (1 - sig_level), measure = outcome)
   updated_tau2 <- updated_meta$tau2
   
   
@@ -105,7 +107,7 @@ InterpretationThreshold <- function(
   #---------------------------#
   
   # Weights are calculated the same whether 'current' or 'new'
-  if (method == "random") {
+  if (method == "DL") {
     size_current <- 1 / ((seSS^2) + updated_tau2)  # standard inverse-variance weighting
     size_new <- 1 / ((seSSnew^2) + updated_tau2)
   } else {
@@ -180,7 +182,7 @@ InterpretationThreshold <- function(
   }
   
   # fixed-effect model #
-  if (method == "fixed")  {
+  if (method == "EE")  {
     vwt <- 1 / (csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
     if (!is.na(zero)) {
       c1SS <- (1 / vwt) * (zero * (sum(size_current) + vwt) - sum(size_current * SS) +  ci * (sum(size_current) + vwt)^0.5)   # formulae based on CI boundaries of new MA meeting no effect
@@ -193,7 +195,7 @@ InterpretationThreshold <- function(
   }
     
   # random-effects model #
-  if (method == "random")  {
+  if (method == "DL")  {
     
     # calculate tau2 adjustment factor K
     # Create V, X, Y, and Z
@@ -215,12 +217,13 @@ InterpretationThreshold <- function(
         
         if (length(SSnew) == 1) {
           # using rmeta::meta.summaries as it's much faster than metafor::rma
-          metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "random", conf.level = (1-sig_level))
+          metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "DL", conf.level = (1-sig_level))
           lc <- metacont$summary - ci*metacont$se.summary
           uc <- metacont$summary + ci*metacont$se.summary
         # When there are multiple new studies, we are estimating tau2 using method of moments and an adjustment factor  
         } else if (length(SSnew) > 1) {
           tau2_est <- ((Z + (cSS[i]^2/csize[j]^2) - ((X + cSS[i]/csize[j]^2)^2/(Y + 1/csize[j]^2)) - (length(SS) + length(SSnew) - 1))/(Y + 1/csize[j]^2 - ((V + 1/csize[j]^4)/(Y + 1/csize[j]^2)))) * K
+          if (tau2_est < 0) {tau2_est <- 0} # ensures no errors
           size_current_pixel <- 1 / ((seSS^2) + tau2_est)
           sc_sum <- sum(size_current_pixel)
           est <- (sum(size_current_pixel * SS) + cSS[i]/(csize[j]^2)) / (sc_sum + 1/(csize[j]^2))
@@ -306,7 +309,7 @@ InterpretationThreshold <- function(
     )
     
     if (pred_interval) {	
-      if (method == 'random') {
+      if (method == 'DL') {
         predint1_current <- predict(current_meta)$pi.lb
         predint2_current <- predict(current_meta)$pi.ub
         # update x-axis limits if predictive interval is wider
@@ -325,7 +328,7 @@ InterpretationThreshold <- function(
      )
      
      if (pred_interval) {	
-       if (method == 'random') {
+       if (method == 'DL') {
          predint1_updated <- predict(updated_meta)$pi.lb
          predint2_updated <- predict(updated_meta)$pi.ub
          # update x-axis limits if predictive interval is wider
@@ -463,7 +466,7 @@ InterpretationThreshold <- function(
     }
   
     # contours
-  if (method == 'fixed') {
+  if (method == 'EE') {
     if (!is.na(zero)) {
         plot <- plot +
           geom_polygon(
@@ -507,7 +510,7 @@ InterpretationThreshold <- function(
         )
     }
   }
-    if (method == 'random') {
+    if (method == 'DL') {
       plot <- plot +
         geom_raster(data = contour_tiles, 
           aes(x = cSS, y = csize, fill = code))
@@ -605,7 +608,7 @@ InterpretationThreshold <- function(
     
     #Tau2 display
     if (tau2) {
-      if (method == 'random') {
+      if (method == 'DL') {
         tau2_label <- paste0(
           "atop(", # atop() stacks the new lines
           "Current~tau^2==", round(current_tau2, 3), ",",
@@ -662,7 +665,9 @@ InterpretationThreshold <- function(
   }
   
   return(list(threshold_result = threshold_result,
-              threshold_plot = threshold_plot))
+              threshold_plot = threshold_plot,
+              original_ma = current_meta,
+              new_ma = updated_meta))
   
 }
 

@@ -30,6 +30,7 @@ source("Publication_bias_downgrades.R")
 #' @param rob_tool What type of risk of bias tool was used (1 or 2)
 #' @param outcome Outcome measure
 #' @param model Meta-analysis model (as per metafor options)
+#' @param ma rma object containing meta-analysis results (optional)
 #' @param null_effect Value for which to assess the point estimates against
 #' @param industry Logical argument for whether there exists industry influence
 #' @param search Logical argument for whether there are concerns regarding the search integrity
@@ -70,6 +71,7 @@ PredictedGRADEdomains <- function(
     rob_tool,
     outcome,
     model,
+    ma = NULL,
     null_effect = 0,
     industry = FALSE,
     search = FALSE,
@@ -125,8 +127,12 @@ PredictedGRADEdomains <- function(
     total_events <- NULL
   }
   
-  # Conduct meta-analysis
-  meta <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome, method = model)
+  # Conduct meta-analysis (if not already given)
+  if (is.null(ma)) {
+    meta <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome, method = model)
+  } else {
+    meta <- ma
+  }
   
   # Set levels
   imprecision_levels <- imprecision_downgrades(
@@ -180,12 +186,12 @@ PredictedGRADEdomains <- function(
   
   # Return #
   return(list(
-    result <- as.character(rating),
-    RoB <- RoB_levels,
-    Imprecision <- imprecision_levels,
-    Inconsistency <- inconsistency_levels,
-    Pubbias <- pubbias_levels,
-    Indirectness <- indirectness
+    result = as.character(rating),
+    RoB = RoB_levels,
+    Imprecision = imprecision_levels,
+    Inconsistency = inconsistency_levels,
+    Pubbias = pubbias_levels,
+    Indirectness = indirectness
   ))
   
 }

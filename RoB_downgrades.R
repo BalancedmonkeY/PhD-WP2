@@ -196,7 +196,7 @@ weighted_RoB <- function(
   
   # Calculate weighted average
   data <- data %>%
-    mutate(weighted_RoB = RoB_value * as.numeric(data[[weights]]))
+    mutate(weighted_RoB = RoB_value * as.numeric(.data[[weights]]))
   weighted_average <- sum(data[["weighted_RoB"]]) / sum(as.numeric(data[[weights]][data[["RoB_value"]] != 0]))
   
   
