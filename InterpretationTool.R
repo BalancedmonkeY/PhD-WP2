@@ -217,7 +217,7 @@ InterpretationThreshold <- function(
         
         if (length(SSnew) == 1) {
           # using rmeta::meta.summaries as it's much faster than metafor::rma
-          metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "DL", conf.level = (1-sig_level))
+          metacont <- rmeta::meta.summaries(d = c(SS, cSS[i]), se = c(seSS, csize[j]), method = "random", conf.level = (1-sig_level))
           lc <- metacont$summary - ci*metacont$se.summary
           uc <- metacont$summary + ci*metacont$se.summary
         # When there are multiple new studies, we are estimating tau2 using method of moments and an adjustment factor  

@@ -190,6 +190,7 @@ weighted_RoB <- function(
   lookup <- c("not applicable" = 0,
               "low" = 1,
               "some concerns" = 2,
+              "unclear" = 2,
               "high" = 3)
   data <- data %>%
     mutate(RoB_value = lookup[data[[overall_rob]]])
@@ -216,7 +217,7 @@ weighted_RoB <- function(
 RoB_downgrades <- function(
     RoB_avg,
     one_level_threshold = 1.5,
-    two_level_threshold = NULL
+    two_level_threshold = 2.5
 ) {
   
   #---------------------------------------------------------------#

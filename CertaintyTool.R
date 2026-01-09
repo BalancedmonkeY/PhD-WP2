@@ -31,6 +31,7 @@ source("Publication_bias_downgrades.R")
 #' @param outcome Outcome measure
 #' @param model Meta-analysis model (as per metafor options)
 #' @param ma rma object containing meta-analysis results (optional)
+#' @param pubbias_min_studies Minimum number of studies needed to calculate the funnel asymetry statistic
 #' @param null_effect Value for which to assess the point estimates against
 #' @param industry Logical argument for whether there exists industry influence
 #' @param search Logical argument for whether there are concerns regarding the search integrity
@@ -72,11 +73,12 @@ PredictedGRADEdomains <- function(
     outcome,
     model,
     ma = NULL,
+    pubbias_min_studies = 10,
     null_effect = 0,
     industry = FALSE,
     search = FALSE,
     RoB_1_threshold = 1.5,
-    RoB_2_threshold = NULL,
+    RoB_2_threshold = 2.5,
     events_1_threshold = 300,
     events_2_threshold = 100,
     CI_threshold_pos = NULL,
@@ -169,6 +171,7 @@ PredictedGRADEdomains <- function(
     data = data,
     estimates = estimates,
     variances = variances,
+    min_studies = pubbias_min_studies,
     threshold = Eggers_threshold,
     industry = industry,
     search = search

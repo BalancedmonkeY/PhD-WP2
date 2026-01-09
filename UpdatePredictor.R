@@ -28,6 +28,7 @@ source("InterpretationTool.R")
 #' @param rob_tool What type of risk of bias tool was used (1 or 2)
 #' @param outcome Outcome measure
 #' @param model Meta-analysis model (as per metafor options)
+#' @param pubbias_min_studies Minimum number of studies needed to calculate the funnel asymetry statistic
 #' @param null_effect Value for which to assess the point estimates against
 #' @param industry Logical argument for whether there exists industry influence
 #' @param search Logical argument for whether there are concerns regarding the search integrity
@@ -94,10 +95,11 @@ UpdatePredictor <- function(
     outcome,
     model,
     null_effect = 0,
+    pubbias_min_studies = 10,
     industry = FALSE,
     search = FALSE,
     RoB_1_threshold = 1.5,
-    RoB_2_threshold = NULL,
+    RoB_2_threshold = 2.5,
     events_1_threshold = 300,
     events_2_threshold = 100,
     CI_threshold_pos = NULL,
@@ -212,6 +214,7 @@ UpdatePredictor <- function(
     outcome = outcome,
     model = model,
     ma = pooled_results$new_ma,
+    pubbias_min_studies = pubbias_min_studies,
     null_effect = null_effect,
     industry = industry,
     search = search,

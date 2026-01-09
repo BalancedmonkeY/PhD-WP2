@@ -8,30 +8,45 @@
 
 #' @param prev_RoB_avg Weighted average risk of bias score from the previous version
 #' @param prev_levels The number of levels the evidence was downgraded due to risk of bias in the previous version
-#' @return suggested_threshold The suggested threshold for downgrading one level
+#' @return list containing: suggested_threshold_1 - The suggested threshold for downgrading one level
+#'                          suggested_threshold_2 - The suggested threshold for downgrading two levels
 
 RoB_threshold_finder <- function(
     prev_RoB_avg,
     prev_levels
 ) {
   
-  suggested_threshold = NULL
+  suggested_threshold_1 = 1.5
+  suggested_threshold_2 = 2.5
 
-  # increase threshold if not previously downgraded, but previous score was 1.5 or higher
+  # increase thresholds if not previously downgraded, but previous score was 1.5 or higher
   if (prev_levels == 0 & prev_RoB_avg >= 1.5) {
-    suggested_threshold <- ceiling((prev_RoB_avg+0.01)*20)/20 # puts threshold at next highest value, on 0.05 scale
+    suggested_threshold_1 <- ceiling((prev_RoB_avg+0.01)*20)/20 # puts threshold at next highest value, on 0.05 scale
+    if (prev_RoB_avg >= 2.5) {
+      suggested_threshold_2 <- ceiling((prev_RoB_avg+((3-prev_RoB_avg)/2))*20)/20  # moves threshold 2 to in-between
+    }
   }
   
-  # decrease one_level_threshold if previously downgraded, but previous score was lower than 1.5
-  else if (prev_levels >= 1 & prev_RoB_avg < 1.5) {
-    suggested_threshold <- floor(prev_RoB_avg*20)/20
+  # decrease one_level_threshold if previously downgraded 1 level, but previous score was lower than 1.5
+  else if (prev_levels == 1 & prev_RoB_avg < 1.5) {
+    suggested_threshold_1 <- floor(prev_RoB_avg*20)/20
   }
   
-  if (!is.null(suggested_threshold)) {
-    return(suggested_threshold = suggested_threshold)
-  } else {
-    message("No new threshold is needed")
+  # increase two_level_threshold if previously downgraded 1 level, but previous score was 2.5 or higher
+  else if (prev_levels == 1 & prev_RoB_avg >= 2.5) {
+    suggested_threshold_2 <- ceiling((prev_RoB_avg+0.01)*20)/20 # puts threshold at next highest value, on 0.05 scale
   }
+  
+  # decrease threshold if previously downgraded 2 levels, but previous score was less than 2.5
+  else if (prev_levels == 2 & prev_RoB_avg < 2.5) {
+    suggested_threshold_2 <- floor(prev_RoB_avg*20)/20
+    if (prev_RoB_avg < 1.5) {
+      suggested_threshold_1 <- floor((prev_RoB_avg-((prev_RoB_avg-1)/2))*20)/20 # moves threshold 1 to in-between
+    }
+  }
+  
+  return(list(suggested_threshold_1 = suggested_threshold_1,
+              suggested_threshold_2 = suggested_threshold_2))
   
 }
 
