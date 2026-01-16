@@ -62,8 +62,8 @@ RoB_threshold_finder <- function(
 
 Pubbias_threshold_finder <- function(
     prev_stat,
-    prev_industry,
-    prev_search,
+    prev_industry = FALSE,
+    prev_search = FALSE,
     prev_levels
 ) {
   
@@ -75,7 +75,7 @@ Pubbias_threshold_finder <- function(
   } 
   
   # increase threshold if previously downgraded, but p-value was 0.1 or higher
-  else if (prev_levels == 1 & prev_stat < threshold & prev_industry == FALSE & prev_search == FALSE) {
+  else if (prev_levels == 1 & prev_stat >= 0.1 & prev_industry == FALSE & prev_search == FALSE) {
     suggested_threshold <- ceiling((prev_stat+0.01)*20)/20
   }
   
