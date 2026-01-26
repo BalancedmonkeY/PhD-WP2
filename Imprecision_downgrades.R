@@ -73,8 +73,8 @@ CI_interpretation <- function(
 #' @param event_threshold_1 Threshold for number of events that will lead to downgrading 1 level
 #' @param CI_ub Upper bound of 95% CI of pooled effect (log scale if ratio)
 #' @param CI_lb Lower bound of 95% CI of pooled effect (log scale if ratio)
-#' @param CI_threshold_pos Threshold to represent meaningful +ve effect
-#' @param CI_threshold_neg Threshold to represent meaningful -ve effect
+#' @param CI_threshold_pos Threshold to represent meaningful +ve effect (log scale if ratio)
+#' @param CI_threshold_neg Threshold to represent meaningful -ve effect (log scale if ratio)
 #' @return levels = Number of levels the evidence is likely to be downgraded due to imprecision (0, 1, or 2)
 
 imprecision_downgrades <- function(

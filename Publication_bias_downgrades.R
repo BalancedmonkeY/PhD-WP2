@@ -28,7 +28,7 @@ pubbias_downgrades <- function(
   
   if (n < min_studies) {
     paste0("The funnel plot statistic is not suitable for datasets with less than ", min_studies, " studies")
-    stat <- 0 # this ensures that no downgrading will happen due to asymmetry (as p-value cannot be smaller than 0)
+    stat <- 1 # this ensures that no downgrading will happen due to asymmetry
   } else {
     
     # Calculate funnel plot statistic (Egger's)

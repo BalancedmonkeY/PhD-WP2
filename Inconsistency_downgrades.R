@@ -102,22 +102,29 @@ inconsistency_downgrades <- function(
     variation_threshold = 0.8
 ) {
   
-  # Obtain Jaccard index and variation in estimates
-  Jaccard <- pairwise_Jaccard(
-    CI_lb_col = data[[CI_lb_col]],
-    CI_ub_col = data[[CI_ub_col]]
-  )
-  var_est <- estimate_variation(
-    estimates = data[[estimates]]
-  )
-  
-  # Assess whether to downgrade
-  if (var_est >= variation_threshold) {
-    levels = 0
-  } else if (Jaccard >= Jaccard_threshold) {
+  # Assign zero if only one study
+  data <- data %>% filter(!is.na(.data[[CI_lb_col]])) # remove rows where there may be NAs (often the case if zero events)
+  if (nrow(data) == 1) {
     levels = 0
   } else {
-    levels = 1
+  
+    # Obtain Jaccard index and variation in estimates
+    Jaccard <- pairwise_Jaccard(
+      CI_lb_col = data[[CI_lb_col]],
+      CI_ub_col = data[[CI_ub_col]]
+    )
+    var_est <- estimate_variation(
+      estimates = data[[estimates]]
+    )
+  
+    # Assess whether to downgrade
+    if (var_est >= variation_threshold) {
+      levels = 0
+    } else if (Jaccard >= Jaccard_threshold) {
+      levels = 0
+    } else {
+      levels = 1
+    }
   }
   
   return(levels = levels)
