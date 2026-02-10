@@ -17,8 +17,16 @@ library(rmeta)
 #' @param seSS standard errors of the current studies (log scale if ratio)
 #' @param SSnew effect estimates of the new study(ies)
 #' @param seSSnew standard errors of the new study(ies)
+#' @param events_trt Number of events in treatment arm of current studies
+#' @param events_ctrl Number of events in control arm of current studies
+#' @param n_trt Total sample size of treatment arm of current studies
+#' @param n_ctrl Total sample size of control arm of current studies
+#' @param events_trt_new Number of events in treatment arm of new studies
+#' @param events_ctrl_new Number of events in control arm of new studies
+#' @param n_trt_new Total sample size of treatment arm of new studies
+#' @param n_ctrl_new Total sample size of control arm of new studies
 #' @param sig_level significance level
-#' @param method type of meta-analysis - "EE" or "DL"
+#' @param method type of meta-analysis - "EE", "MH" or "DL"
 #' @param outcome type of outcome measure - "OR", "RR", "RD", "MD", "SMD"
 #' @param ylim limits of the y axis	in form c(y1, y2) 
 #' @param xlim limits of the x axis in form c(x1, x2)
@@ -55,6 +63,14 @@ InterpretationThreshold <- function(
     seSS,
     SSnew,
     seSSnew,
+    events_trt,
+    events_ctrl,
+    n_trt,
+    n_ctrl,
+    events_trt_new,
+    events_ctrl_new,
+    n_trt_new,
+    n_ctrl_new,
     sig_level = 0.05,
     method = 'EE',
     outcome = 'RR',
@@ -94,12 +110,30 @@ InterpretationThreshold <- function(
   ci <- qnorm(1 - sig_level / 2)
   
   #Calculate current meta-analysis (using rma from {metafor})
-  current_meta <- metafor::rma(yi = SS, sei = seSS, method = method, level = (1 - sig_level), measure = outcome)
+  if (method == "MH") {
+    current_meta <- metafor::rma.mh(ai = events_trt, ci = events_ctrl, n1i = n_trt, n2i = n_ctrl, level = (1 - sig_level), measure = outcome)
+  } else {
+    current_meta <- metafor::rma(yi = SS, sei = seSS, method = method, level = (1 - sig_level), measure = outcome)
+  }
   current_tau2 <- current_meta$tau2
   
   #Calculate updated meta-analysis (using rma from {metafor})
-  updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = method, level = (1 - sig_level), measure = outcome)
+  if (method == "MH") {
+    updated_meta <- metafor::rma.mh(ai = c(events_trt, events_trt_new), ci = c(events_ctrl,events_ctrl_new), 
+                                    n1i = c(n_trt, n_trt_new), n2i = c(n_ctrl, n_ctrl_new), level = (1 - sig_level), measure = outcome)
+  } else {
+   updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = method, level = (1 - sig_level), measure = outcome) 
+  }
+  
   updated_tau2 <- updated_meta$tau2
+  
+  # Calculate SS and seSS when MH is chosen
+  if (method == "MH") {
+    SS <- updated_meta$yi[1:length(events_trt)]
+    SSnew <- updated_meta$yi[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]
+    seSS <- sqrt(updated_meta$vi[1:length(events_trt)])
+    seSSnew <- sqrt(updated_meta$vi[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])
+  }
   
   
   #---------------------------#
@@ -107,7 +141,10 @@ InterpretationThreshold <- function(
   #---------------------------#
   
   # Weights are calculated the same whether 'current' or 'new'
-  if (method == "DL") {
+  if (method == "MH") { # weight estimate from Greenland and Robins
+    size_current <- (events_ctrl*n_trt)/(n_trt + n_ctrl)
+    size_new <- (events_ctrl_new*n_trt_new)/(n_trt_new + n_ctrl_new)
+  } else if (method == "DL") {
     size_current <- 1 / ((seSS^2) + updated_tau2)  # standard inverse-variance weighting
     size_new <- 1 / ((seSSnew^2) + updated_tau2)
   } else {
@@ -182,7 +219,7 @@ InterpretationThreshold <- function(
   }
   
   # fixed-effect model #
-  if (method == "EE")  {
+  if (method %in% c("EE", "MH"))  {
     vwt <- 1 / (csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
     if (!is.na(zero)) {
       c1SS <- (1 / vwt) * (zero * (sum(size_current) + vwt) - sum(size_current * SS) +  ci * (sum(size_current) + vwt)^0.5)   # formulae based on CI boundaries of new MA meeting no effect

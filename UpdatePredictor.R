@@ -25,6 +25,10 @@ source("InterpretationTool.R")
 #' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param variances Column name that refers to the variances of each study
+#' @param events_trt Column name that refers to the number of events in the treatment arm
+#' @param events_ctrl Column name that refers to the number of events in the control arm
+#' @param n_trt Column name that refers to the total number of people in the treatment arm
+#' @param n_ctrl Column name that refers to the total number of people in the control arm
 #' @param rob_tool What type of risk of bias tool was used (1 or 2)
 #' @param outcome Outcome measure
 #' @param model Meta-analysis model (as per metafor options)
@@ -91,6 +95,10 @@ UpdatePredictor <- function(
     CI_ub_col,
     estimates,
     variances,
+    events_trt,
+    events_ctrl,
+    n_trt,
+    n_ctrl,
     rob_tool,
     outcome,
     model,
@@ -158,6 +166,14 @@ UpdatePredictor <- function(
     seSS = sqrt(prev_data[[variances]]),
     SSnew = new_data[[estimates]],
     seSSnew = sqrt(new_data[[variances]]),
+    events_trt = prev_data[[events_trt]],
+    events_ctrl = prev_data[[events_ctrl]],
+    n_trt = prev_data[[n_trt]],
+    n_ctrl = prev_data[[n_ctrl]],
+    events_trt_new = new_data[[events_trt]],
+    events_ctrl_new = new_data[[events_ctrl]],
+    n_trt_new = new_data[[n_trt]],
+    n_ctrl_new = new_data[[n_ctrl]],
     sig_level = sig_level,
     method = model,
     outcome = outcome,
@@ -210,6 +226,10 @@ UpdatePredictor <- function(
     CI_ub_col = CI_ub_col,
     estimates = estimates,
     variances = variances,
+    events_trt = events_trt,
+    events_ctrl = events_ctrl,
+    n_trt = n_trt,
+    n_ctrl = n_ctrl,
     rob_tool = rob_tool,
     outcome = outcome,
     model = model,

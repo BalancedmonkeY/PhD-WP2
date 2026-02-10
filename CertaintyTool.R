@@ -27,9 +27,13 @@ source("Publication_bias_downgrades.R")
 #' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param variances Column name that refers to the variances of each study
+#' @param events_trt Column name that refers to the number of events in the treatment arm
+#' @param events_ctrl Column name that refers to the number of events in the control arm
+#' @param n_trt Column name that refers to the total number of people in the treatment arm
+#' @param n_ctrl Column name that refers to the total number of people in the control arm
 #' @param rob_tool What type of risk of bias tool was used (1 or 2)
 #' @param outcome Outcome measure
-#' @param model Meta-analysis model (as per metafor options)
+#' @param model Meta-analysis model (as per metafor options (EE, MH, or DL))
 #' @param ma rma object containing meta-analysis results (optional)
 #' @param pubbias_min_studies Minimum number of studies needed to calculate the funnel asymetry statistic
 #' @param null_effect Value for which to assess the point estimates against
@@ -69,6 +73,10 @@ PredictedGRADEdomains <- function(
     CI_ub_col,
     estimates,
     variances,
+    events_trt,
+    events_ctrl,
+    n_trt,
+    n_ctrl,
     rob_tool,
     outcome,
     model,
@@ -131,7 +139,11 @@ PredictedGRADEdomains <- function(
   
   # Conduct meta-analysis (if not already given)
   if (is.null(ma)) {
-    meta <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome, method = model)
+    if (model == "MH") {
+      meta <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]], measure = outcome)
+    } else {
+      meta <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome, method = model)
+    }
   } else {
     meta <- ma
   }
@@ -171,6 +183,11 @@ PredictedGRADEdomains <- function(
     data = data,
     estimates = estimates,
     variances = variances,
+    events_trt = events_trt,
+    events_ctrl = events_ctrl,
+    n_trt = n_trt,
+    n_ctrl = n_ctrl,
+    model = model,
     min_studies = pubbias_min_studies,
     threshold = Eggers_threshold,
     industry = industry,
