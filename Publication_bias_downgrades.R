@@ -43,7 +43,8 @@ pubbias_downgrades <- function(
     
     # Calculate funnel plot statistic (Egger's)
     if (model == "MH") {
-      res <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]])
+      res <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]],
+                             drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
     } else {
       res <- metafor::rma(yi = data[[estimates]], vi = data[[variances]])
     }

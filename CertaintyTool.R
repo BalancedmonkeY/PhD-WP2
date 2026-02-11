@@ -140,7 +140,8 @@ PredictedGRADEdomains <- function(
   # Conduct meta-analysis (if not already given)
   if (is.null(ma)) {
     if (model == "MH") {
-      meta <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]], measure = outcome)
+      meta <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]], measure = outcome,
+                              drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
     } else {
       meta <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome, method = model)
     }

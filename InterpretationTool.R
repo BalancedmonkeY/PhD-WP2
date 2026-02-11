@@ -111,7 +111,8 @@ InterpretationThreshold <- function(
   
   #Calculate current meta-analysis (using rma from {metafor})
   if (method == "MH") {
-    current_meta <- metafor::rma.mh(ai = events_trt, ci = events_ctrl, n1i = n_trt, n2i = n_ctrl, level = (1 - sig_level), measure = outcome)
+    current_meta <- metafor::rma.mh(ai = events_trt, ci = events_ctrl, n1i = n_trt, n2i = n_ctrl, level = (1 - sig_level), measure = outcome,
+                                    drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
   } else {
     current_meta <- metafor::rma(yi = SS, sei = seSS, method = method, level = (1 - sig_level), measure = outcome)
   }
@@ -120,7 +121,8 @@ InterpretationThreshold <- function(
   #Calculate updated meta-analysis (using rma from {metafor})
   if (method == "MH") {
     updated_meta <- metafor::rma.mh(ai = c(events_trt, events_trt_new), ci = c(events_ctrl,events_ctrl_new), 
-                                    n1i = c(n_trt, n_trt_new), n2i = c(n_ctrl, n_ctrl_new), level = (1 - sig_level), measure = outcome)
+                                    n1i = c(n_trt, n_trt_new), n2i = c(n_ctrl, n_ctrl_new), level = (1 - sig_level), measure = outcome,
+                                    drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
   } else {
    updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = method, level = (1 - sig_level), measure = outcome) 
   }
