@@ -6,8 +6,8 @@
 # Clareece Nevill December 2025 #
 #-------------------------------#
 
-source("CertaintyTool.R")
-source("InterpretationTool.R")
+source("../3. Create tool/CertaintyTool.R")
+source("../3. Create tool/InterpretationTool.R")
 
 #' @param data Data frame where each row contains a study, and the columns include: (i) RoB ratings, (ii) estimates & CI bounds & vi (in log form if ratio), (iii) Weight, (iv) Number of events (if dichotomous), (v) Search data study was found from
 #' @param search_col Column name indicating the search dates for which the respective study was identified

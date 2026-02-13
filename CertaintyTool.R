@@ -7,10 +7,10 @@
 
 library(dplyr)
 library(metafor)
-source("RoB_downgrades.R")
-source("Inconsistency_downgrades.R")
-source("Imprecision_downgrades.R")
-source("Publication_bias_downgrades.R")
+source("../3. Create tool/RoB_downgrades.R")
+source("../3. Create tool/Inconsistency_downgrades.R")
+source("../3. Create tool/Imprecision_downgrades.R")
+source("../3. Create tool/Publication_bias_downgrades.R")
 
 #' @param data Data frame where each row contains a study, and the columns include: (i) RoB ratings, (ii) estimates & CI bounds & vi (in log form if ratio), (iii) Weight, (iv) Number of events (if dichotomous)
 #' @param overall_rob Overall rating of risk of bias
