@@ -114,7 +114,8 @@ inconsistency_downgrades <- function(
       CI_ub_col = data[[CI_ub_col]]
     )
     var_est <- estimate_variation(
-      estimates = data[[estimates]]
+      estimates = data[[estimates]],
+      threshold = null_effect
     )
   
     # Assess whether to downgrade

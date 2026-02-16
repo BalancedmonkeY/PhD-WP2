@@ -87,6 +87,30 @@ result$threshold_plot
 
 This work has extended the basic plot developed by Langan et. al.[@langan2012] in various ways to tailor it towards the aim of this interpretation tool.
 
+### Focus on estimate
+
+Instead of focusing on the confidence interval, the tool and visual aid can also consider the point estimate in relation to user-specified clinical significance threshold(s). Regarding fixed-effects, the contour equations are actually a simplification of those for statistical significance as we don't need to consider variance and the calculation of confidence intervals:
+
+$$
+\hat\theta = \frac{1}{w_{new}}[\theta_{-ve/+ve}[\Sigma^n_{i=1}w_i + w_{new}] - \Sigma^n_{i=1}w_i\hat\theta_i]
+$$
+
+where $\theta_{-ve}$ and $\theta_{+ve}$ are the user-specific boundaries for a negative and positive clinical significance respectively.
+
+In the tool, the user can enter one or both of the following:
+
+1.  A threshold for when values larger than this threshold indicate a positive effect clinically
+
+2.  A threshold for when values smaller than this threshold indicate a negative effect clinically
+
+Example where we only specify a positive clinical effect of estimates larger than 1.05:
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'EE', outcome = 'RR', est_pos = 1.05, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+```
+
 ### Clinical significance
 
 Instead of considering statistical significance (which in this tool the user can also specify (e.g., set type I error rate to 10% rather than the standard 5%)), the tool and visual aid can also consider a user-specified clinical significance. To do this, the user simply enters one of the following:

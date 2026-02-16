@@ -25,10 +25,10 @@ source("../3. Create tool/InterpretationTool.R")
 #' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param variances Column name that refers to the variances of each study
-#' @param events_trt Column name that refers to the number of events in the treatment arm
-#' @param events_ctrl Column name that refers to the number of events in the control arm
-#' @param n_trt Column name that refers to the total number of people in the treatment arm
-#' @param n_ctrl Column name that refers to the total number of people in the control arm
+#' @param events_trt_name Column name that refers to the number of events in the treatment arm
+#' @param events_ctrl_name Column name that refers to the number of events in the control arm
+#' @param n_trt_name Column name that refers to the total number of people in the treatment arm
+#' @param n_ctrl_name Column name that refers to the total number of people in the control arm
 #' @param rob_tool What type of risk of bias tool was used (1 or 2)
 #' @param outcome Outcome measure
 #' @param model Meta-analysis model (as per metafor options)
@@ -62,7 +62,9 @@ source("../3. Create tool/InterpretationTool.R")
 #' @param yticks custom ticks for the y axis
 #' @param effect_zero value for the null effect (if interesting in statistical significant regarding the pooled effect)
 #' @param effect_lower value for which the user wants the lower CI bound to be as high as (regarding pooled effect)
-#' @param effect_upper value for which the user wants the upper CI bound to be as low as (regarding pooled effect)	
+#' @param effect_upper value for which the user wants the upper CI bound to be as low as (regarding pooled effect)
+#' @param effect_est_pos Value for which the user wants to specify the estimate to be as high as
+#' @param effect_est_neg Value for which the user wants to specify the estimate to be as low as	
 #' @param xlab label for the x axis		
 #' @param ylab label for the y axis
 #' @param plot_threshold TRUE/FALSE plot the threshold value vertical line as defined by the argument 'zero', 'lower', or 'upper'	
@@ -77,6 +79,10 @@ source("../3. Create tool/InterpretationTool.R")
 #' @param pred_interval TRUE/FALSE display predictive interval along with the summary diamond
 #' @param tau2 TRUE/FALSE display tau2 values (TRUE default)
 #' @param rand.load TRUE/FALSE show percentage of computations complete when the random effects contours are calculated
+#' returns a list of the following:
+#' text_result = text description of whether or not to update
+#' GRADE_results = output from certainty tool
+#' pooled_results = output from interpretation tool
 
 UpdatePredictor <- function(
     data,
@@ -93,12 +99,12 @@ UpdatePredictor <- function(
     event_cols,
     CI_lb_col,
     CI_ub_col,
-    estimates,
-    variances,
-    events_trt,
-    events_ctrl,
-    n_trt,
-    n_ctrl,
+    estimates = NULL,
+    variances = NULL,
+    events_trt_name = NULL,
+    events_ctrl_name = NULL,
+    n_trt_name = NULL,
+    n_ctrl_name = NULL,
     rob_tool,
     outcome,
     model,
@@ -133,6 +139,8 @@ UpdatePredictor <- function(
     effect_zero = NA,
     effect_lower = NA,
     effect_upper = NA,
+    effect_est_pos = NA,
+    effect_est_neg = NA,
     xlab = paste0 ("Effect (", outcome, ")"),
     ylab = "Standard Error",
     plot_threshold = TRUE,
@@ -154,26 +162,26 @@ UpdatePredictor <- function(
   # Split data into 'original' and 'new' #
   #--------------------------------------#
   
-  prev_data <- data %>% filter(.data[[search_col]] <= last_search_date)
-  new_data <- data %>% filter(.data[[search_col]] > last_search_date)
+  prev_df <- data %>% filter(.data[[search_col]] <= last_search_date)
+  new_df <- data %>% filter(.data[[search_col]] > last_search_date)
   
   #-----------------------------------#
   # Predict change in pooled estimate #
   #-----------------------------------#
   
   pooled_results <- InterpretationThreshold(
-    SS = prev_data[[estimates]],
-    seSS = sqrt(prev_data[[variances]]),
-    SSnew = new_data[[estimates]],
-    seSSnew = sqrt(new_data[[variances]]),
-    events_trt = prev_data[[events_trt]],
-    events_ctrl = prev_data[[events_ctrl]],
-    n_trt = prev_data[[n_trt]],
-    n_ctrl = prev_data[[n_ctrl]],
-    events_trt_new = new_data[[events_trt]],
-    events_ctrl_new = new_data[[events_ctrl]],
-    n_trt_new = new_data[[n_trt]],
-    n_ctrl_new = new_data[[n_ctrl]],
+    SS <- if (!is.null(estimates)) prev_df[[estimates]] else NULL,
+    seSS = if (!is.null(variances))  sqrt(prev_df[[variances]]) else NULL,
+    SSnew = if (!is.null(estimates))  new_df[[estimates]] else NULL,
+    seSSnew = if (!is.null(variances))  sqrt(new_df[[variances]]) else NULL,
+    events_trt = if (!is.null(events_trt_name))  prev_df[[events_trt_name]] else NULL,
+    events_ctrl = if (!is.null(events_ctrl_name))  prev_df[[events_ctrl_name]] else NULL,
+    n_trt = if (!is.null(n_trt_name))  prev_df[[n_trt_name]] else NULL,
+    n_ctrl = if (!is.null(n_ctrl_name))  prev_df[[n_ctrl_name]] else NULL,
+    events_trt_new = if (!is.null(events_trt_name))  new_df[[events_trt_name]] else NULL,
+    events_ctrl_new = if (!is.null(events_ctrl_name))  new_df[[events_ctrl_name]] else NULL,
+    n_trt_new = if (!is.null(n_trt_name))  new_df[[n_trt_name]] else NULL,
+    n_ctrl_new = if (!is.null(n_ctrl_name))  new_df[[n_ctrl_name]] else NULL,
     sig_level = sig_level,
     method = model,
     outcome = outcome,
@@ -188,6 +196,8 @@ UpdatePredictor <- function(
     zero = effect_zero,
     lower = effect_lower,
     upper = effect_upper,
+    est_pos = effect_est_pos,
+    est_neg = effect_est_neg,
     xlab = xlab,
     ylab = ylab,
     plot_threshold = plot_threshold,
@@ -224,12 +234,12 @@ UpdatePredictor <- function(
     event_cols = event_cols,
     CI_lb_col = CI_lb_col,
     CI_ub_col = CI_ub_col,
-    estimates = estimates,
-    variances = variances,
-    events_trt = events_trt,
-    events_ctrl = events_ctrl,
-    n_trt = n_trt,
-    n_ctrl = n_ctrl,
+    estimates = if (!is.null(estimates)) estimates else NULL,
+    variances = if (!is.null(variances)) variances else NULL,
+    events_trt = if (!is.null(events_trt_name)) events_trt_name else NULL,
+    events_ctrl = if (!is.null(events_ctrl_name)) events_ctrl_name else NULL,
+    n_trt = if (!is.null(n_trt_name)) n_trt_name else NULL,
+    n_ctrl = if (!is.null(n_ctrl_name)) n_ctrl_name else NULL,
     rob_tool = rob_tool,
     outcome = outcome,
     model = model,
@@ -300,11 +310,16 @@ UpdatePredictor <- function(
   }
   
   # Any changes in pooled effect #
-  if (grepl("will give", pooled_results$threshold_result)) {
+  # Indicators of whether current and updated meta-analysis hit any thresholds
+  og_hit <- grepl("do give", pooled_results$og_threshold_result)
+  new_hit <- grepl("will give", pooled_results$threshold_result)
+  # see if changed
+  if (og_hit != new_hit) {
     Interpretation_text <- paste0("LSRUpdateR predicts that the addition of new studies will change the interpretation of the results. ",
+                                  pooled_results$og_threshold_result, ". ",
                                   pooled_results$threshold_result, ".")
   } else {
-    Interpretation_text <- paste0("LSRUpdateR doesn't predict any change in interpretation: ", pooled_results$threshold_result, ".")
+    Interpretation_text <- paste0("LSRUpdateR doesn't predict any change in interpretation: ", pooled_results$og_threshold_result, ". ", pooled_results$threshold_result, ".")
   }
   
   # Any changes for either #
@@ -316,7 +331,11 @@ UpdatePredictor <- function(
                   Interpretation_text, Certainty_text)
   }
   
-  return(update_text)
+  return(list(
+    text_result = update_text,
+    GRADE_results = newGRADE,
+    pooled_results = pooled_results
+    ))
   
   
 }
