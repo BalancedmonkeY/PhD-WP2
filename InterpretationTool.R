@@ -59,8 +59,7 @@ library(rmeta)
 #' threshold_result - a string containing a description of whether the threshold of the new analysis was met;
 #' threshold_plot - the extended funnel plot that visualises the threshold and whether it was met
 #' original_ma - rma object containing meta-analysis details of original dataset
-#' new_ma - ma object containing meta-analysis details of new dataset 
-#' og_threshold_result - a string containing a description of whether the threshold of the current analysis was met               
+#' new_ma - ma object containing meta-analysis details of new dataset              
 InterpretationThreshold <- function(
     SS = NULL,
     seSS = NULL,
@@ -114,15 +113,6 @@ InterpretationThreshold <- function(
   #Convert the significance level into 'z' from the normal distribution (i.e. 0.05 -> 1.96)
   ci <- qnorm(1 - sig_level / 2)
   
-  #Calculate current meta-analysis (using rma from {metafor})
-  if (method == "MH") {
-    current_meta <- metafor::rma.mh(ai = events_trt, ci = events_ctrl, n1i = n_trt, n2i = n_ctrl, level = (1 - sig_level), measure = outcome,
-                                    drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
-  } else {
-    current_meta <- metafor::rma(yi = SS, sei = seSS, method = method, level = (1 - sig_level), measure = outcome)
-  }
-  current_tau2 <- current_meta$tau2
-  
   #Calculate updated meta-analysis (using rma from {metafor})
   if (method == "MH") {
     updated_meta <- metafor::rma.mh(ai = c(events_trt, events_trt_new), ci = c(events_ctrl,events_ctrl_new), 
@@ -136,10 +126,23 @@ InterpretationThreshold <- function(
   
   # Calculate SS and seSS when MH is chosen
   if (method == "MH") {
-    SS <- updated_meta$yi[1:length(events_trt)]
-    SSnew <- updated_meta$yi[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]
-    seSS <- sqrt(updated_meta$vi[1:length(events_trt)])
-    seSSnew <- sqrt(updated_meta$vi[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])
+    SS <- as.vector(na.omit(updated_meta$yi.f[1:length(events_trt)]))
+    SSnew <- as.vector(na.omit(updated_meta$yi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]))
+    seSS <- sqrt(as.vector(na.omit(updated_meta$vi.f[1:length(events_trt)])))
+    seSSnew <- sqrt(as.vector(na.omit(updated_meta$vi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])))
+  }
+  
+  #Calculate current meta-analysis (using rma from {metafor}) (if there is suitable data)
+  if (length(na.omit(SS)) != 0) {
+    if (method == "MH") {
+      current_meta <- metafor::rma.mh(ai = events_trt, ci = events_ctrl, n1i = n_trt, n2i = n_ctrl, level = (1 - sig_level), measure = outcome,
+                                      drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
+    } else {
+      current_meta <- metafor::rma(yi = SS, sei = seSS, method = method, level = (1 - sig_level), measure = outcome)
+    }
+    current_tau2 <- current_meta$tau2
+  } else {
+    current_meta <- "The 'current' meta-analysis was not suitable as there was no estimable data"
   }
   
   
@@ -149,8 +152,15 @@ InterpretationThreshold <- function(
   
   # Weights are calculated the same whether 'current' or 'new'
   if (method == "MH") { # weight estimate from Greenland and Robins
-    size_current <- (events_ctrl*n_trt)/(n_trt + n_ctrl)
-    size_new <- (events_ctrl_new*n_trt_new)/(n_trt_new + n_ctrl_new)
+    # zero adjustment
+    zero_row <- xor(events_ctrl == 0, events_trt == 0)
+    size_current <- ifelse(zero_row,
+                           ((events_ctrl + 0.5)*(n_trt + 1))/((n_trt + 1) + (n_ctrl + 1)),
+                           (events_ctrl*n_trt)/(n_trt + n_ctrl))
+    zero_row_new <- xor(events_ctrl_new == 0, events_trt_new == 0)
+    size_new <- ifelse(zero_row_new,
+                       ((events_ctrl_new + 0.5)*(n_trt_new + 1))/((n_trt_new + 1) + (n_ctrl_new + 1)),
+                       (events_ctrl_new*n_trt_new)/(n_trt_new + n_ctrl_new))
   } else if (method == "DL") {
     size_current <- 1 / ((seSS^2) + updated_tau2)  # standard inverse-variance weighting
     size_new <- 1 / ((seSSnew^2) + updated_tau2)
@@ -168,14 +178,16 @@ InterpretationThreshold <- function(
   # Intelligent y-axis default limits #
   #-----------------------------------#
   
-  sediff <- max(c(seSS, seSSnew)) - min(c(seSS, seSSnew))
+  if (length(na.omit(SS)) != 0) {
+  
+  sediff <- max(c(seSS, seSSnew), na.rm = TRUE) - min(c(seSS, seSSnew), na.rm = TRUE)
   
   if (!is.null(ylim) && ylim[1] < ylim[2]) {
     ylim <- rev(ylim)  # for when the user has already defined y limits
   }
   
   if (is.null(ylim)) {
-    ylim <- c(max(c(seSS, seSSnew)) + 0.20 * sediff, min(c(seSS, seSSnew)) - 0.25 * sediff)
+    ylim <- c(max(c(seSS, seSSnew), na.rm = TRUE) + 0.20 * sediff, min(c(seSS, seSSnew), na.rm = TRUE) - 0.25 * sediff)
     if (ylim[2] < 0) {
       ylim[2] <- 0
     }
@@ -183,9 +195,13 @@ InterpretationThreshold <- function(
   
   axisdiff <- ylim[2] - ylim[1]
   
+  }
+  
   #-----------------------------------#
   # Intelligent x-axis default limits #
   #-----------------------------------#
+  
+  if (length(na.omit(SS)) != 0) {
   
   # log if user specified and outcome is a ratio
   if (!is.null(xlim) & outcome %in% c('OR', 'RR')) {
@@ -193,16 +209,20 @@ InterpretationThreshold <- function(
   }
   
   # Default limits
-  SSdiff <- max(c(SS, SSnew)) - min(c(SS, SSnew))
+  SSdiff <- max(c(SS, SSnew), na.rm = TRUE) - min(c(SS, SSnew), na.rm = TRUE)
   
   if (is.null(xlim)) {
-    xlim <- c(min(c(SS, SSnew)) - 0.2 * SSdiff, max(c(SS, SSnew)) + 0.2 * SSdiff)
+    xlim <- c(min(c(SS, SSnew), na.rm = TRUE) - 0.2 * SSdiff, max(c(SS, SSnew), na.rm = TRUE) + 0.2 * SSdiff)
+  }
+  
   }
 
   
   #-------------------------------------------------#
   # Vector of weights/sizes to define contours upon #
   #-------------------------------------------------#
+  
+  if (length(na.omit(SS)) != 0) {
   
    cSS <- seq(xlim[1], xlim[2], length.out = contour_points)  # granulated vector for effect size (x-axis)
    csize <- seq(ylim[1], ylim[2], length.out = contour_points)  # granulated vector for standard error (y-axis)
@@ -213,6 +233,8 @@ InterpretationThreshold <- function(
      }
    }
    csize <- csize[!is.na(csize)]   # remove unnecessary data points
+   
+  }
   
   #------------------------------#
   # Create significance contours #
@@ -231,6 +253,8 @@ InterpretationThreshold <- function(
       if (!is.na(est_neg)) {est_neg <- log(est_neg)}
    }
   }
+  
+  if (length(na.omit(SS)) != 0) {
   
   # fixed-effect model #
   if (method %in% c("EE", "MH"))  {
@@ -325,89 +349,36 @@ InterpretationThreshold <- function(
     
     contour_tiles <- cbind(contour_tiles, expand.grid(cSS = cSS, csize = csize))
   }
+    
+  }
    
   #------------------------------#
   # Assess whether threshold met #
   #------------------------------#  
    
-  # Create function #
-   Threshold_Description <- function(meta, sig_level, zero, lower, upper, est_pos, est_neg, new_or_og, SSnew) {
-     
-     # Acquire updated meta-analysis confidence intervals
-      meta_pvalue <- meta$pval 
-      meta_lower <- meta$ci.lb
-      meta_upper <- meta$ci.ub
-      meta_est <- as.numeric(meta$beta)
-      
-      # Where focus is on statistical significance (where alpha = 0.05)
-  if (sig_level == 0.05 & !is.na(zero) & is.na(lower) & is.na(upper) & is.na(est_pos) & is.na(est_neg)) {
-    if (meta_pvalue < 0.05) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " give a statistically significant (alpha = 0.05) pooled estimate")
-    } else {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a statistically significant (alpha = 0.05) pooled estimate")
-    }
-  # Where focus is on statistical significance (where alpha != 0.05)
-  } else if (sig_level != 0.05 & !is.na(zero) & is.na(lower) & is.na(upper) & is.na(est_pos) & is.na(est_neg)) {
-    if (meta_upper < 0 | meta_lower > 0) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " give a statistically significant (alpha = ", sig_level, ") pooled estimate")
-    } else {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a statistically significant (alpha = ", sig_level, ") pooled estimate")
-    }
-  # Where focus is on a specific upper or lower confidence band
-  } else if (is.na(zero) & !is.na(lower) & is.na(upper) & is.na(est_pos) & is.na(est_neg)) {
-    if (meta_lower > lower) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
-    } else {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a ", round(100*(1 - sig_level),1), "% CI that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower))
-    }
-  } else if (is.na(zero) & is.na(lower) & !is.na(upper) & is.na(est_pos) & is.na(est_neg)) {
-    if (meta_upper < upper) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
-    } else {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a ", round(100*(1 - sig_level),1), "% CI that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper))
-    }
-  # Where focus is on clinical significance
-  } else if (is.na(zero) & is.na(lower) & is.na(upper) & (!is.na(est_pos) | !is.na(est_neg))) {
-    if (!is.na(est_pos) & meta_est > est_pos) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " give a pooled estimate that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_pos), est_pos))
-    } else if (!is.na(est_neg) & meta_est < est_neg) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " give a pooled estimate that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_neg), est_neg))
-    } else if (!is.na(est_pos) & is.na(est_neg) & meta_est <= est_pos) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a pooled estimate that is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_pos), est_pos))
-    } else if (!is.na(est_neg) & is.na(est_pos) & meta_est >= est_neg) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a pooled estimate that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_neg), est_neg))
-    } else if (!is.na(est_neg) & !is.na(est_pos) & meta_est <= est_pos & meta_est >= est_neg) {
-      threshold_result <- paste0(ifelse(new_or_og == "new", paste0("Addition of new ", ifelse(length(SSnew) > 1, "studies", "study"), " will"), "Current studies do"), " not give a pooled estimate that is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_neg), est_neg), " or higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_neg), est_neg))
-    }
-  } else {
-    print ("(Only) one of zero, lower, upper, or est_pos/est_neg need to be given a value")
-  }
-   }
+   source("../3. Create tool/ThresholdDescribers.R")
    
    # Threshold result for new studies
-   threshold_result <- Threshold_Description(meta = updated_meta, sig_level=sig_level, zero=zero, lower=lower, 
+   threshold_result <- Threshold_Description(meta = updated_meta, sig_level=sig_level, zero=zero, lower=lower, outcome = outcome, 
                                              upper=upper, est_pos=est_pos, est_neg=est_neg, SSnew=SSnew,
                                              new_or_og = "new")
-   og_threshold_result <- Threshold_Description(meta = current_meta, sig_level=sig_level, zero=zero, lower=lower, 
-                                                upper=upper, est_pos=est_pos, est_neg=est_neg,
-                                                new_or_og = "og")
-   
-  
   
   
   
   #------------------#
   # Summary diamonds #
   #------------------#
+   
+   if (length(na.omit(SS)) != 0) {
   
-  if (summ_current) {
+  if (summ_current & length(na.omit(SS)) != 0) {
     summary_diamond_current <- data.frame(
       xsumm = c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b),
       ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
                 ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
     )
     
-    if (pred_interval) {	
+    if (pred_interval & length(na.omit(SS)) != 0) {	
       if (method == 'DL') {
         predint1_current <- predict(current_meta)$pi.lb
         predint2_current <- predict(current_meta)$pi.ub
@@ -536,11 +507,12 @@ InterpretationThreshold <- function(
   # drop rows that are not included (based on inputs)
   legendmat.col <- legendmat.col[!is.na(legendmat.col$labels), ]
   
+   }
   #-------------------#
   # Put together plot #
   #-------------------#
   
-  if (draw_plot) {
+  if (draw_plot & length(na.omit(SS)) != 0) {
   
     # empty frame
     plot <- ggplot(data = data.frame(x = SS, y = seSS), aes(x = x, y = y)) +
@@ -664,7 +636,7 @@ InterpretationThreshold <- function(
     }
   
     # Pooled effect lines
-    if (plot_summ_current) {
+    if (plot_summ_current & length(na.omit(SS)) != 0) {
       plot <- plot +
         geom_vline(aes(xintercept = current_meta$b, color = "summ_current_col"))
     }
@@ -755,7 +727,7 @@ InterpretationThreshold <- function(
     }
     
     #Tau2 display
-    if (tau2) {
+    if (tau2 & length(na.omit(SS)) != 0) {
       if (method == 'DL') {
         tau2_label <- paste0(
           "atop(", # atop() stacks the new lines
@@ -809,14 +781,13 @@ InterpretationThreshold <- function(
     threshold_plot <- plot
     
   } else {
-    threshold_plot <- "'draw_plot' was not selected to be TRUE"  # message for when users want the plot but didn't select for it
+    threshold_plot <- "'draw_plot' was not selected to be TRUE or there was no estimable data in the 'current' version"  # message for when users want the plot but didn't select for it
   }
   
   return(list(threshold_result = threshold_result,
               threshold_plot = threshold_plot,
               original_ma = current_meta,
-              new_ma = updated_meta,
-              og_threshold_result = og_threshold_result))
+              new_ma = updated_meta))
   
 }
 

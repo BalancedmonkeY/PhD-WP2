@@ -27,10 +27,10 @@ source("../3. Create tool/Publication_bias_downgrades.R")
 #' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param variances Column name that refers to the variances of each study
-#' @param events_trt Column name that refers to the number of events in the treatment arm
-#' @param events_ctrl Column name that refers to the number of events in the control arm
-#' @param n_trt Column name that refers to the total number of people in the treatment arm
-#' @param n_ctrl Column name that refers to the total number of people in the control arm
+#' @param events_trt_name Column name that refers to the number of events in the treatment arm
+#' @param events_ctrl_name Column name that refers to the number of events in the control arm
+#' @param n_trt_name Column name that refers to the total number of people in the treatment arm
+#' @param n_ctrl_name Column name that refers to the total number of people in the control arm
 #' @param rob_tool What type of risk of bias tool was used (1 or 2)
 #' @param outcome Outcome measure
 #' @param model Meta-analysis model (as per metafor options (EE, MH, or DL))
@@ -73,10 +73,10 @@ PredictedGRADEdomains <- function(
     CI_ub_col,
     estimates,
     variances,
-    events_trt,
-    events_ctrl,
-    n_trt,
-    n_ctrl,
+    events_trt_name,
+    events_ctrl_name,
+    n_trt_name,
+    n_ctrl_name,
     rob_tool,
     outcome,
     model,
@@ -157,8 +157,8 @@ PredictedGRADEdomains <- function(
     event_threshold_1 = events_1_threshold,
     CI_lb = meta$ci.lb,
     CI_ub = meta$ci.ub,
-    CI_threshold_pos = CI_threshold_pos,
-    CI_threshold_neg = CI_threshold_neg
+    CI_threshold_pos = ifelse(outcome %in% c('OR', 'RR'), log(CI_threshold_pos), CI_threshold_pos),
+    CI_threshold_neg = ifelse(outcome %in% c('OR', 'RR'), log(CI_threshold_neg), CI_threshold_neg)
   )
   
   #------------------------------#

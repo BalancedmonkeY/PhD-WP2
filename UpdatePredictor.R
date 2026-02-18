@@ -8,6 +8,7 @@
 
 source("../3. Create tool/CertaintyTool.R")
 source("../3. Create tool/InterpretationTool.R")
+source("../3. Create tool/ThresholdDescribers.R")
 
 #' @param data Data frame where each row contains a study, and the columns include: (i) RoB ratings, (ii) estimates & CI bounds & vi (in log form if ratio), (iii) Weight, (iv) Number of events (if dichotomous), (v) Search data study was found from
 #' @param search_col Column name indicating the search dates for which the respective study was identified
@@ -51,6 +52,10 @@ source("../3. Create tool/InterpretationTool.R")
 #' @param prev_inconsistency Previous levels downgraded for inconsistency
 #' @param prev_pubbias Previous levels downgraded for publication bias
 #' @param prev_indirectness Previous levels downgraded for indirectness
+#' @param prev_est Previous pooled estimate (optional - suitable for when studies might be excluded from 'current_data')
+#' @param prev_lb Lower CI bound for previous pooled estimate
+#' @param prev_ub Upper CI bound for previous pooled estimate
+#' @param prev_p_value P-value from previous meta-analysis
 #' @param sig_level significance level
 #' @param ylim limits of the y axis	in form c(y1, y2) 
 #' @param xlim limits of the x axis in form c(x1, x2)
@@ -127,6 +132,10 @@ UpdatePredictor <- function(
     prev_inconsistency,
     prev_pubbias,
     prev_indirectness,
+    prev_est = NULL,
+    prev_lb = NULL,
+    prev_ub = NULL,
+    prev_p_value = NULL,
     sig_level = 0.05,
     ylim = NULL,
     xlim = NULL,
@@ -162,8 +171,8 @@ UpdatePredictor <- function(
   # Split data into 'original' and 'new' #
   #--------------------------------------#
   
-  prev_df <- data %>% filter(.data[[search_col]] <= last_search_date)
-  new_df <- data %>% filter(.data[[search_col]] > last_search_date)
+  prev_df <- data %>% filter(data[[search_col]] <= last_search_date)
+  new_df <- data %>% filter(data[[search_col]] > last_search_date)
   
   #-----------------------------------#
   # Predict change in pooled estimate #
@@ -214,11 +223,42 @@ UpdatePredictor <- function(
     rand_load = rand_load
   )
   
+  # Threshold result for the original meta-analysis (taken externally due to exclusion set-up)
+  if (outcome %in% c('OR', 'RR')) {
+    if (!is.na(effect_zero)) {
+      effect_zero <- log(effect_zero)
+    } else if (!is.na(effect_lower)) {
+      effect_lower <- log(effect_lower)
+    } else if (!is.na(effect_upper)) {
+      effect_upper <- log(effect_upper)
+    } else if (!is.na(effect_est_pos) | !is.na(effect_est_neg)) {
+      if (!is.na(effect_est_pos)) {effect_est_pos <- log(effect_est_pos)}
+      if (!is.na(effect_est_neg)) {effect_est_neg <- log(effect_est_neg)}
+    }
+    
+    if (!is.null(prev_est)) {
+      prev_est <- log(prev_est)
+    }
+    if (!is.null(prev_lb)) {
+      prev_lb <- log(prev_lb)
+    }
+    if (!is.null(prev_ub)) {
+      prev_ub <- log(prev_ub)
+    }
+    null_effect <- log(null_effect)
+  }
+  og_threshold_result <- Threshold_Description(est = prev_est, ci_lb = prev_lb, ci_ub = prev_ub, pvalue = prev_p_value, outcome = outcome,
+                                               sig_level=sig_level, zero=effect_zero, lower=effect_lower, 
+                                               upper=effect_upper, est_pos=effect_est_pos, est_neg=effect_est_neg,
+                                               new_or_og = "og")
+  
   #---------------------------------------------------#
   # Predict new GRADE rating if including all studies #
   #---------------------------------------------------#
   
-  data$weights <- weights(pooled_results$new_ma)
+  data$weights <- 0
+  data$weights[!is.na(data$Mean)] <- weights(pooled_results$new_ma)
+  
   
   newGRADE <- PredictedGRADEdomains(
     data = data,
@@ -236,10 +276,10 @@ UpdatePredictor <- function(
     CI_ub_col = CI_ub_col,
     estimates = if (!is.null(estimates)) estimates else NULL,
     variances = if (!is.null(variances)) variances else NULL,
-    events_trt = if (!is.null(events_trt_name)) events_trt_name else NULL,
-    events_ctrl = if (!is.null(events_ctrl_name)) events_ctrl_name else NULL,
-    n_trt = if (!is.null(n_trt_name)) n_trt_name else NULL,
-    n_ctrl = if (!is.null(n_ctrl_name)) n_ctrl_name else NULL,
+    events_trt_name = if (!is.null(events_trt_name)) events_trt_name else NULL,
+    events_ctrl_name = if (!is.null(events_ctrl_name)) events_ctrl_name else NULL,
+    n_trt_name = if (!is.null(n_trt_name)) n_trt_name else NULL,
+    n_ctrl_name = if (!is.null(n_ctrl_name)) n_ctrl_name else NULL,
     rob_tool = rob_tool,
     outcome = outcome,
     model = model,
@@ -311,15 +351,15 @@ UpdatePredictor <- function(
   
   # Any changes in pooled effect #
   # Indicators of whether current and updated meta-analysis hit any thresholds
-  og_hit <- grepl("do give", pooled_results$og_threshold_result)
+  og_hit <- grepl("do give", og_threshold_result)
   new_hit <- grepl("will give", pooled_results$threshold_result)
   # see if changed
   if (og_hit != new_hit) {
     Interpretation_text <- paste0("LSRUpdateR predicts that the addition of new studies will change the interpretation of the results. ",
-                                  pooled_results$og_threshold_result, ". ",
+                                  og_threshold_result, ". ",
                                   pooled_results$threshold_result, ".")
   } else {
-    Interpretation_text <- paste0("LSRUpdateR doesn't predict any change in interpretation: ", pooled_results$og_threshold_result, ". ", pooled_results$threshold_result, ".")
+    Interpretation_text <- paste0("LSRUpdateR doesn't predict any change in interpretation: ", og_threshold_result, ". ", pooled_results$threshold_result, ".")
   }
   
   # Any changes for either #
