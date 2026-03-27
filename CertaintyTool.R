@@ -23,8 +23,8 @@ source("../3. Create tool/Publication_bias_downgrades.R")
 #' @param other Other bias rating (RoB 1 only)
 #' @param weights Meta-analysis weighting for each study
 #' @param event_cols Column names for events (if dichotomous)
-#' @param CI_lb_col Column name that refer to the CI lower bound (in log-form for ratios)
-#' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
+#' @param CI_lb_col Column name that refer to the CI lower bound (keep in original units)
+#' @param CI_ub_col Column name that refers to the CI upper bound (keep in original units)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param variances Column name that refers to the variances of each study
 #' @param events_trt_name Column name that refers to the number of events in the treatment arm
@@ -93,7 +93,7 @@ PredictedGRADEdomains <- function(
     CI_threshold_neg = NULL,
     Jaccard_threshold = 0.4,
     variation_threshold = 0.8,
-    Eggers_threshold = 0.1,
+    Eggers_threshold = 0.025,
     indirectness = 0
 ) {
   
@@ -140,7 +140,7 @@ PredictedGRADEdomains <- function(
   # Conduct meta-analysis (if not already given)
   if (is.null(ma)) {
     if (model == "MH") {
-      meta <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]], measure = outcome,
+      meta <- metafor::rma.mh(ai = data[[events_trt_name]], ci = data[[events_ctrl_name]], n1i = data[[n_trt_name]], n2i = data[[n_ctrl_name]], measure = outcome,
                               drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
     } else {
       meta <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome, method = model)
@@ -182,12 +182,13 @@ PredictedGRADEdomains <- function(
   
   pubbias_levels <- pubbias_downgrades(
     data = data,
+    outcome = outcome,
     estimates = estimates,
     variances = variances,
-    events_trt = events_trt,
-    events_ctrl = events_ctrl,
-    n_trt = n_trt,
-    n_ctrl = n_ctrl,
+    events_trt = events_trt_name,
+    events_ctrl = events_ctrl_name,
+    n_trt = n_trt_name,
+    n_ctrl = n_ctrl_name,
     model = model,
     min_studies = pubbias_min_studies,
     threshold = Eggers_threshold,

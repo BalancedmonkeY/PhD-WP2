@@ -25,8 +25,8 @@ Jaccard_index <- function(
   
 }
 
-#' @param CI_lb_col Column of data that refer to the CI lower bound (in log-form for ratios)
-#' @param CI_ub_col Column of data that refers to the CI upper bound (in log forms for ratios)
+#' @param CI_lb_col Column of data that refer to the CI lower bound (keep in original units)
+#' @param CI_ub_col Column of data that refers to the CI upper bound (keep in original units)
 #' @return index = average pairwise Jaccard Index of the data
 
 pairwise_Jaccard <- function(
@@ -84,8 +84,8 @@ estimate_variation <- function(
 }
 
 #' @param data Dataset containing information
-#' @param CI_lb_col Column name that refer to the CI lower bound (in log-form for ratios)
-#' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
+#' @param CI_lb_col Column name that refer to the CI lower bound (keep in original units)
+#' @param CI_ub_col Column name that refers to the CI upper bound (keep in original units)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param null_effect Value for which to assess the point estimates against (in log-form for ratios)
 #' @param Jaccard_threshold Threshold for the Jaccard index to suggest inconsistency

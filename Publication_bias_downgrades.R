@@ -5,6 +5,7 @@
 library(metafor)
 
 #' @param data Dataset containing information (including variance/standard error, and on log scale for ratios) as calculated by metafor escalc() command
+#' @param outcome Type of outcome measure (e.g., OR, RR, MD)
 #' @param estimates Column name for study estimates
 #' @param variances Column name for study variances
 #' @param events_trt Column name that refers to the number of events in the treatment arm
@@ -20,6 +21,7 @@ library(metafor)
 
 pubbias_downgrades <- function(
     data,
+    outcome,
     estimates,
     variances,
     events_trt,
@@ -28,7 +30,7 @@ pubbias_downgrades <- function(
     n_ctrl,
     model,
     min_studies = 10,
-    threshold = 0.1,
+    threshold = 0.025,
     industry = FALSE,
     search = FALSE
 ) {
@@ -43,7 +45,7 @@ pubbias_downgrades <- function(
     
     # Calculate funnel plot statistic (Egger's)
     if (model == "MH") {
-      res <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]],
+      res <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]], measure = outcome,
                              drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
     } else {
       res <- metafor::rma(yi = data[[estimates]], vi = data[[variances]])

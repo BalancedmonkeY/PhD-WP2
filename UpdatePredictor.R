@@ -22,8 +22,8 @@ source("../3. Create tool/ThresholdDescribers.R")
 #' @param reporting Reporting bias rating (RoB 1 only)
 #' @param other Other bias rating (RoB 1 only)
 #' @param event_cols Column names for events (if dichotomous)
-#' @param CI_lb_col Column name that refer to the CI lower bound (in log-form for ratios)
-#' @param CI_ub_col Column name that refers to the CI upper bound (in log forms for ratios)
+#' @param CI_lb_col Column name that refer to the CI lower bound (keep in original units)
+#' @param CI_ub_col Column name that refers to the CI upper bound (keep in original units)
 #' @param estimates Column name that refers to the point estimates of all studies (in log forms for ratios)
 #' @param variances Column name that refers to the variances of each study
 #' @param events_trt_name Column name that refers to the number of events in the treatment arm
@@ -125,7 +125,7 @@ UpdatePredictor <- function(
     CI_threshold_neg = NULL,
     Jaccard_threshold = 0.4,
     variation_threshold = 0.8,
-    Eggers_threshold = 0.1,
+    Eggers_threshold = 0.025,
     indirectness = 0,
     prev_RoB,
     prev_imprecision,
@@ -336,16 +336,15 @@ UpdatePredictor <- function(
                            newGRADE$Indirectness, " level(s) instead.")
   } else {indirectness_text <- ""}
   
-  # Combine domains #
-  GRADE_domains_text <- paste0(RoB_text, imprecision_text, inconsistency_text, pubbias_text, indirectness_text)
-  if (GRADE_domains_text != "") {
+  # Calculate whether change of overall rating & add respective text
+  old_GRADE_rating <- as.character(factor(max(4-prev_RoB-prev_imprecision-prev_inconsistency-prev_pubbias-prev_indirectness,1), levels = c(1,2,3,4), labels = c("Very low", "Low", "Moderate", "High")))
+  if (old_GRADE_rating != newGRADE$result) {
+    GRADE_domains_text <- paste0(RoB_text, imprecision_text, inconsistency_text, pubbias_text, indirectness_text)
     Certainty_text <- paste0("LSRUpdateR predicts that the addition of new studies will change the GRADE rating of evidence. Currently, the evidence is graded at ",
-                             as.character(factor(max(4-prev_RoB-prev_imprecision-prev_inconsistency-prev_pubbias-prev_indirectness,1), levels = c(1,2,3,4), labels = c("Very low", "Low", "Moderate", "High"))),
-    ", but LSRUpdateR predicts it will become ", newGRADE$result, " after the inclusion of new studies. ",
+                             old_GRADE_rating, ", but LSRUpdateR predicts it will become ", newGRADE$result, " after the inclusion of new studies. ",
     GRADE_domains_text)
   } else {
-    Certainty_text <- paste0("Currently, the evidence is graded at ",
-                             as.character(factor(max(4-prev_RoB-prev_imprecision-prev_inconsistency-prev_pubbias-prev_indirectness,1), levels = c(1,2,3,4), labels = c("Very low", "Low", "Moderate", "High"))),
+    Certainty_text <- paste0("Currently, the evidence is graded at ", old_GRADE_rating,
                              ". LSRUpdateR doesn't predict that this will change with the inclusion of new studies.")
   }
   
