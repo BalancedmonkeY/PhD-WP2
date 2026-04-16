@@ -172,13 +172,14 @@ Imprecision_threshold_finder <- function(
     prev_events,
     prev_CI_lb,
     prev_CI_ub,
-    prev_levels
+    prev_levels,
+    prev_threshold_pos = NULL,
+    prev_threshold_neg = NULL
 ) {
   
-  suggested_event_threshold_1 = NULL
-  suggested_event_threshold_2 = NULL
-  suggested_CI_threshold_pos = NULL
-  suggested_CI_threshold_neg = NULL
+  event_threshold_1 = NULL
+  event_threshold_2 = NULL
+  threshold = NULL
 
   # Obtain downgrading levels due to each measure using default values
   # Total number of events
@@ -197,12 +198,14 @@ Imprecision_threshold_finder <- function(
   prev_interpretation_df <- CI_interpretation(
     CI_lb = prev_CI_lb,
     CI_ub = prev_CI_ub,
+    threshold_pos = prev_threshold_pos,
+    threshold_neg = prev_threshold_neg,
     outcome = outcome
   )
   prev_interpretation_downgrade <- sum(prev_interpretation_df) - 1
   
   # Using imprecision_autoadjust_matrix, look-up action needed
-  imprecision_autoadjust_matrix <- read.csv("imprecision_autoadjust_matrix.csv", header = TRUE)
+  imprecision_autoadjust_matrix <- read.csv("../3. Create tool/imprecision_autoadjust_matrix.csv", header = TRUE)
   idx <- which(imprecision_autoadjust_matrix$Level == prev_levels & 
                  imprecision_autoadjust_matrix$Events == prev_event_downgrade &
                  imprecision_autoadjust_matrix$CI == prev_interpretation_downgrade)
@@ -232,11 +235,11 @@ Imprecision_threshold_finder <- function(
     }
   }
   
-  if (!is.null(suggested_event_threshold_1) | !is.null(suggested_event_threshold_2) | !is.null(suggested_CI_threshold_pos) | !is.null(suggested_CI_threshold_neg)) {
+  if (!is.null(event_threshold_1) | !is.null(event_threshold_2) | !is.null(threshold)) {
     return(list(suggested_event_threshold_1 = event_threshold_1,
                 suggested_event_threshold_2 = event_threshold_2,
-                suggested_CI_threshold_pos = threshold,
-                suggested_CI_threshold_neg = -threshold))
+                suggested_CI_threshold_pos = round(ifelse(outcome == "MD", threshold, exp(threshold)),2),
+                suggested_CI_threshold_neg = round(ifelse(outcome == "MD", -threshold, exp(-threshold)),2)))
   } else {
     message("No new thresholds are needed")
   }

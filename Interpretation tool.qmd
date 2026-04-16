@@ -74,7 +74,7 @@ In the example below (@fig-base-example), one can see:
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', zero = 1, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+  method = 'EE', outcome = 'RR', zero = 1, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
 ```
 
 ```{r, echo = FALSE, fig.width = 10}

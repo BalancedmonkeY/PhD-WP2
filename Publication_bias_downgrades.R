@@ -47,8 +47,11 @@ pubbias_downgrades <- function(
     if (model == "MH") {
       res <- metafor::rma.mh(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]], measure = outcome,
                              drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
+    } else if (is.null(variances)) {
+      res <- metafor::rma(ai = data[[events_trt]], ci = data[[events_ctrl]], n1i = data[[n_trt]], n2i = data[[n_ctrl]],
+                          measure = outcome)
     } else {
-      res <- metafor::rma(yi = data[[estimates]], vi = data[[variances]])
+      res <- metafor::rma(yi = data[[estimates]], vi = data[[variances]], measure = outcome)
     }
     test_info <- metafor::regtest(res, model = "lm", predictor = "sei")
     stat <- test_info$pval

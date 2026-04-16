@@ -140,7 +140,7 @@ UpdatePredictor <- function(
     ylim = NULL,
     xlim = NULL,
     contour_points = 200,
-    draw_plot = TRUE,
+    draw_plot = FALSE,
     legend = TRUE,
     expxticks = NULL,
     xticks = NULL,

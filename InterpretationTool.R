@@ -118,18 +118,26 @@ InterpretationThreshold <- function(
     updated_meta <- metafor::rma.mh(ai = c(events_trt, events_trt_new), ci = c(events_ctrl,events_ctrl_new), 
                                     n1i = c(n_trt, n_trt_new), n2i = c(n_ctrl, n_ctrl_new), level = (1 - sig_level), measure = outcome,
                                     drop00 = c(TRUE, TRUE), add = c(0.5, 0.5), to = c("only0", "only0"))
+  } else if (is.null(seSS)) {
+    updated_meta <- metafor::rma(ai = c(events_trt, events_trt_new), ci = c(events_ctrl,events_ctrl_new), 
+                                 n1i = c(n_trt, n_trt_new), n2i = c(n_ctrl, n_ctrl_new), method = method, level = (1 - sig_level), measure = outcome)
   } else {
-   updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = method, level = (1 - sig_level), measure = outcome) 
+    updated_meta <- metafor::rma(yi = c(SS, SSnew), sei = c(seSS, seSSnew), method = method, level = (1 - sig_level), measure = outcome) 
   }
   
   updated_tau2 <- updated_meta$tau2
   
-  # Calculate SS and seSS when MH is chosen
-  if (method == "MH") {
+  # Calculate SS and seSS when MH is chosen (or variances not given)
+  if (method == "MH" | is.null(seSS)) {
     SS <- as.vector(na.omit(updated_meta$yi.f[1:length(events_trt)]))
-    SSnew <- as.vector(na.omit(updated_meta$yi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]))
     seSS <- sqrt(as.vector(na.omit(updated_meta$vi.f[1:length(events_trt)])))
-    seSSnew <- sqrt(as.vector(na.omit(updated_meta$vi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])))
+    if (length(events_trt_new) != 0) {
+      SSnew <- as.vector(na.omit(updated_meta$yi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]))
+      seSSnew <- sqrt(as.vector(na.omit(updated_meta$vi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])))
+    } else {
+      SSnew <- NULL
+      seSSnew <- NULL
+    }
   }
   
   #Calculate current meta-analysis (using rma from {metafor}) (if there is suitable data)
@@ -150,6 +158,8 @@ InterpretationThreshold <- function(
   # NEW WEIGHTINGS of studies #
   #---------------------------#
   
+  if (draw_plot) {
+  
   # Weights are calculated the same whether 'current' or 'new'
   if (method == "MH") { # weight estimate from Greenland and Robins
     # zero adjustment
@@ -157,10 +167,12 @@ InterpretationThreshold <- function(
     size_current <- ifelse(zero_row,
                            ((events_ctrl + 0.5)*(n_trt + 1))/((n_trt + 1) + (n_ctrl + 1)),
                            (events_ctrl*n_trt)/(n_trt + n_ctrl))
+    size_current <- size_current[size_current != 0] # removes double zero entries
     zero_row_new <- xor(events_ctrl_new == 0, events_trt_new == 0)
     size_new <- ifelse(zero_row_new,
                        ((events_ctrl_new + 0.5)*(n_trt_new + 1))/((n_trt_new + 1) + (n_ctrl_new + 1)),
                        (events_ctrl_new*n_trt_new)/(n_trt_new + n_ctrl_new))
+    size_new <- size_new[size_new != 0]
   } else if (method == "DL") {
     size_current <- 1 / ((seSS^2) + updated_tau2)  # standard inverse-variance weighting
     size_new <- 1 / ((seSSnew^2) + updated_tau2)
@@ -170,13 +182,18 @@ InterpretationThreshold <- function(
   }
   
   # New studies 'average' (only when multiple)
+    if (length(SSnew) > 1) {
   new_avg_est <- sum(size_new * SSnew) / sum(size_new)
   new_avg_se <- sqrt(1 / sum(size_new))
-
+    }
+  
+  }
   
   #-----------------------------------#
   # Intelligent y-axis default limits #
   #-----------------------------------#
+  
+  if (draw_plot) {
   
   if (length(na.omit(SS)) != 0) {
   
@@ -196,10 +213,14 @@ InterpretationThreshold <- function(
   axisdiff <- ylim[2] - ylim[1]
   
   }
+    
+  }
   
   #-----------------------------------#
   # Intelligent x-axis default limits #
   #-----------------------------------#
+  
+  if (draw_plot) {
   
   if (length(na.omit(SS)) != 0) {
   
@@ -216,11 +237,14 @@ InterpretationThreshold <- function(
   }
   
   }
-
+    
+  }
   
   #-------------------------------------------------#
   # Vector of weights/sizes to define contours upon #
   #-------------------------------------------------#
+  
+  if (draw_plot) {
   
   if (length(na.omit(SS)) != 0) {
   
@@ -234,6 +258,8 @@ InterpretationThreshold <- function(
    }
    csize <- csize[!is.na(csize)]   # remove unnecessary data points
    
+  }
+    
   }
   
   #------------------------------#
@@ -253,6 +279,8 @@ InterpretationThreshold <- function(
       if (!is.na(est_neg)) {est_neg <- log(est_neg)}
    }
   }
+  
+  if (draw_plot) {
   
   if (length(na.omit(SS)) != 0) {
   
@@ -351,12 +379,14 @@ InterpretationThreshold <- function(
   }
     
   }
+    
+  }
    
   #------------------------------#
   # Assess whether threshold met #
   #------------------------------#  
    
-   source("../3. Create tool/ThresholdDescribers.R")
+   source("C:/Users/crn4/OneDrive - University of Leicester/PhD/WP2/3. Create tool/ThresholdDescribers.R")
    
    # Threshold result for new studies
    threshold_result <- Threshold_Description(meta = updated_meta, sig_level=sig_level, zero=zero, lower=lower, outcome = outcome, 
@@ -368,6 +398,8 @@ InterpretationThreshold <- function(
   #------------------#
   # Summary diamonds #
   #------------------#
+   
+   if (draw_plot) {
    
    if (length(na.omit(SS)) != 0) {
   
@@ -408,6 +440,8 @@ InterpretationThreshold <- function(
        }
      }
    } 
+     
+   }
   
   #---------------#
   # Design legend #
@@ -507,7 +541,8 @@ InterpretationThreshold <- function(
   # drop rows that are not included (based on inputs)
   legendmat.col <- legendmat.col[!is.na(legendmat.col$labels), ]
   
-   }
+     }
+    
   #-------------------#
   # Put together plot #
   #-------------------#
