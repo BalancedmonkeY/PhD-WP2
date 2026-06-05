@@ -90,7 +90,7 @@ InterpretationThreshold <- function(
     est_pos = NA,
     est_neg = NA,
     xlab = paste0 ("Effect (", outcome, ")"),
-    ylab = "Standard Error",
+    ylab = ifelse(method == "MH", "Weight", "Standard Error"),
     plot_threshold = TRUE,
     plot_summ_current = TRUE,
     plot_summ_updated = TRUE,
@@ -127,16 +127,21 @@ InterpretationThreshold <- function(
   
   updated_tau2 <- updated_meta$tau2
   
-  # Calculate SS and seSS when MH is chosen (or variances not given)
-  if (method == "MH" | is.null(seSS)) {
-    SS <- as.vector(na.omit(updated_meta$yi.f[1:length(events_trt)]))
-    seSS <- sqrt(as.vector(na.omit(updated_meta$vi.f[1:length(events_trt)])))
-    if (length(events_trt_new) != 0) {
-      SSnew <- as.vector(na.omit(updated_meta$yi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]))
-      seSSnew <- sqrt(as.vector(na.omit(updated_meta$vi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])))
+  # Calculate SS (and seSS) when MH is chosen (or variances not given)
+  if (is.null(seSS)) {
+    if (method == "MH") {
+      SS <- exp(as.vector(na.omit(updated_meta$yi.f[1:length(events_trt)]))) # everything needs to be on original scale for MH option and seSS is not needed
     } else {
-      SSnew <- NULL
-      seSSnew <- NULL
+      SS <- as.vector(na.omit(updated_meta$yi.f[1:length(events_trt)]))
+      seSS <- sqrt(as.vector(na.omit(updated_meta$vi.f[1:length(events_trt)])))
+    }
+    if (length(events_trt_new) != 0) {
+      if (method == "MH") {
+        SSnew <- exp(as.vector(na.omit(updated_meta$yi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])))
+      } else {
+        SSnew <- as.vector(na.omit(updated_meta$yi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))]))
+        seSSnew <- sqrt(as.vector(na.omit(updated_meta$vi.f[(length(events_trt) + 1):(length(events_trt) + length(events_trt_new))])))
+      }
     }
   }
   
@@ -185,6 +190,7 @@ InterpretationThreshold <- function(
     if (length(SSnew) > 1) {
   new_avg_est <- sum(size_new * SSnew) / sum(size_new)
   new_avg_se <- sqrt(1 / sum(size_new))
+  new_avg_weight <- sum(size_new) # the contribution of weight of combined new studies would be the sum of all their weights
     }
   
   }
@@ -196,21 +202,33 @@ InterpretationThreshold <- function(
   if (draw_plot) {
   
   if (length(na.omit(SS)) != 0) {
+    
+    if (method == "MH") {
+      weightdiff <- max(c(size_current, size_new), na.rm = TRUE) - min(c(size_current, size_new), na.rm = TRUE)
+    } else {
+      sediff <- max(c(seSS, seSSnew), na.rm = TRUE) - min(c(seSS, seSSnew), na.rm = TRUE)
+    }
   
-  sediff <- max(c(seSS, seSSnew), na.rm = TRUE) - min(c(seSS, seSSnew), na.rm = TRUE)
-  
-  if (!is.null(ylim) && ylim[1] < ylim[2]) {
-    ylim <- rev(ylim)  # for when the user has already defined y limits
+  if (!is.null(ylim) && ylim[1] < ylim[2] & method != "MH") {
+    ylim <- rev(ylim)  # for when the user has already defined y limits, reverse them for standard error
   }
   
   if (is.null(ylim)) {
-    ylim <- c(max(c(seSS, seSSnew), na.rm = TRUE) + 0.20 * sediff, min(c(seSS, seSSnew), na.rm = TRUE) - 0.25 * sediff)
-    if (ylim[2] < 0) {
-      ylim[2] <- 0
+    if (method == "MH") {
+      ylim <- c(min(c(size_current, size_new), na.rm = TRUE) - 0.25 * weightdiff, max(c(size_current, size_new), na.rm = TRUE) + 0.20 * weightdiff)
+      if (ylim[1] <= 0) {
+        ylim[1] <- min(c(size_current, size_new, 0.01))
+      }
+    } else {
+      ylim <- c(max(c(seSS, seSSnew), na.rm = TRUE) + 0.20 * sediff, min(c(seSS, seSSnew), na.rm = TRUE) - 0.25 * sediff)
+      if (ylim[2] < 0) {
+        ylim[2] <- 0
+      }
     }
+    
   }
-  
-  axisdiff <- ylim[2] - ylim[1]
+    
+    axisdiff <- abs(ylim[2] - ylim[1])
   
   }
     
@@ -224,8 +242,8 @@ InterpretationThreshold <- function(
   
   if (length(na.omit(SS)) != 0) {
   
-  # log if user specified and outcome is a ratio
-  if (!is.null(xlim) & outcome %in% c('OR', 'RR')) {
+  # log if user specified and outcome is a ratio (but not MH)
+  if (!is.null(xlim) & outcome %in% c('OR', 'RR') & method != "MH") {
     xlim <- log(xlim)
   }
   
@@ -233,7 +251,12 @@ InterpretationThreshold <- function(
   SSdiff <- max(c(SS, SSnew), na.rm = TRUE) - min(c(SS, SSnew), na.rm = TRUE)
   
   if (is.null(xlim)) {
-    xlim <- c(min(c(SS, SSnew), na.rm = TRUE) - 0.2 * SSdiff, max(c(SS, SSnew), na.rm = TRUE) + 0.2 * SSdiff)
+    xlim <- c(min(c(SS, SSnew), na.rm = TRUE) - 0.01 * SSdiff, max(c(SS, SSnew), na.rm = TRUE) + 0.01 * SSdiff)
+  }
+  if (method == "MH") {
+    if (xlim[1] <= 0) {
+      xlim[1] <- min(c(0.01, SS, SSnew))
+    }
   }
   
   }
@@ -250,13 +273,15 @@ InterpretationThreshold <- function(
   
    cSS <- seq(xlim[1], xlim[2], length.out = contour_points)  # granulated vector for effect size (x-axis)
    csize <- seq(ylim[1], ylim[2], length.out = contour_points)  # granulated vector for standard error (y-axis)
-   csize[csize <= 0] <- 0.0000001 * min(c(seSS, seSSnew))
-   for (k in 2:length(csize)) {
-     if (csize[k] == 0 & csize[k-1] == 0) {
-       csize[k] <- NA
-     }
+   if (method != "MH") {
+    csize[csize <= 0] <- 0.0000001 * min(c(seSS, seSSnew))
+    for (k in 2:length(csize)) {
+       if (csize[k] == 0 & csize[k-1] == 0) {
+         csize[k] <- NA
+      }
+    }
+    csize <- csize[!is.na(csize)]   # remove unnecessary data points
    }
-   csize <- csize[!is.na(csize)]   # remove unnecessary data points
    
   }
     
@@ -267,7 +292,8 @@ InterpretationThreshold <- function(
   #------------------------------#
    
   # Transform user-specified thresholds if outcome is a ratio
-  if (outcome %in% c('OR', 'RR')) {
+  # But not when using MH estimator as weights are based on original scale
+  if (outcome %in% c('OR', 'RR') & method != "MH") {
    if (!is.na(zero)) {
      zero <- log(zero)
    } else if (!is.na(lower)) {
@@ -286,7 +312,11 @@ InterpretationThreshold <- function(
   
   # fixed-effect model #
   if (method %in% c("EE", "MH"))  {
-    vwt <- 1 / (csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
+    if (method == "EE") {
+      vwt <- 1 / (csize^2)     # weight for each point on plot (inverse of variance) (i.e. weight of new study)
+    } else if (method == "MH") {
+      vwt <- csize # weights already calculated earlier
+    }
     if (!is.na(zero)) {
       c1SS <- (1 / vwt) * (zero * (sum(size_current) + vwt) - sum(size_current * SS) +  ci * (sum(size_current) + vwt)^0.5)   # formulae based on CI boundaries of new MA meeting no effect
       c2SS <- (1 / vwt) * (zero * (sum(size_current) + vwt) - sum(size_current * SS) -  ci * (sum(size_current) + vwt)^0.5)
@@ -391,7 +421,7 @@ InterpretationThreshold <- function(
    # Threshold result for new studies
    threshold_result <- Threshold_Description(meta = updated_meta, sig_level=sig_level, zero=zero, lower=lower, outcome = outcome, 
                                              upper=upper, est_pos=est_pos, est_neg=est_neg, SSnew=SSnew,
-                                             new_or_og = "new")
+                                             new_or_og = "new", transform_log = ifelse(method == "MH", TRUE, FALSE))
   
   
   
@@ -404,8 +434,13 @@ InterpretationThreshold <- function(
    if (length(na.omit(SS)) != 0) {
   
   if (summ_current & length(na.omit(SS)) != 0) {
+    if (method == "MH") {
+      xsumm = exp(c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b))
+    } else {
+      xsumm = c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b)
+    }
     summary_diamond_current <- data.frame(
-      xsumm = c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b),
+      xsumm = xsumm,
       ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
                 ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
     )
@@ -423,8 +458,13 @@ InterpretationThreshold <- function(
   }
    
    if (summ_updated) {
+     if (method == "MH") {
+       xsumm = exp(c(updated_meta$ci.lb, updated_meta$b, updated_meta$ci.ub, updated_meta$b))
+     } else {
+       xsumm = c(updated_meta$ci.lb, updated_meta$b, updated_meta$ci.ub, updated_meta$b)
+     }
      summary_diamond_updated <- data.frame(
-       xsumm = c(updated_meta$ci.lb, updated_meta$b, updated_meta$ci.ub, updated_meta$b),
+       xsumm = xsumm,
        ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
                  ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
      )
@@ -523,19 +563,19 @@ InterpretationThreshold <- function(
   } else if (!is.na(lower) | !is.na(upper)) {
     legendmat.fill.values <- c(legendmat.fill.values, "noclinsig_col" = "white", "clinsig_col" = "gray72")
     if (!is.na(lower)) {
-      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower), ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower), ")"))
+      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", ifelse(outcome %in% c('OR', 'RR') & method != "MH", exp(lower), lower), ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is higher than ", ifelse(outcome %in% c('OR', 'RR'), exp(lower), lower), ")"))
     } else {
-      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper), ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper), ")"))
+      legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Non Sig Effect (", round((1-sig_level)*100, 1), "%CI crosses ", ifelse(outcome %in% c('OR', 'RR') & method != "MH", exp(upper), upper), ")"), paste0("Sig Effect (", round((1-sig_level)*100, 1), "%CI is lower than ", ifelse(outcome %in% c('OR', 'RR'), exp(upper), upper), ")"))
     }
   } else if (!is.na(est_pos) & !is.na(est_neg)) {
     legendmat.fill.values <- c(legendmat.fill.values, "nosig_col" = "white", "sigless_col" = "gray91", "sigmore_col" = "gray72")
-    legendmat.fill.labels <- c(legendmat.fill.labels, "Non clinically significant result", paste0("Clinically negative effect (less than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_neg), est_neg), " )"), paste0("Clinically positive effect (more than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_pos), est_pos), " )"))
+    legendmat.fill.labels <- c(legendmat.fill.labels, "Non clinically significant result", paste0("Clinically negative effect (less than ", ifelse(outcome %in% c('OR', 'RR') & method != "MH", exp(est_neg), est_neg), " )"), paste0("Clinically positive effect (more than ", ifelse(outcome %in% c('OR', 'RR') & method != "MH", exp(est_pos), est_pos), " )"))
   } else if (!is.na(est_pos)) {
     legendmat.fill.values <- c(legendmat.fill.values, "nosig_col" = "white", "sigmore_col" = "gray72")
-    legendmat.fill.labels <- c(legendmat.fill.labels, "Non clinically significant result", paste0("Clinically positive effect (more than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_pos), est_pos), " )"))
+    legendmat.fill.labels <- c(legendmat.fill.labels, "Non clinically significant result", paste0("Clinically positive effect (more than ", ifelse(outcome %in% c('OR', 'RR') & method != "MH", exp(est_pos), est_pos), " )"))
   } else if (!is.na(est_neg)) {
     legendmat.fill.values <- c(legendmat.fill.values, "nosig_col" = "white", "sigless_col" = "gray91")
-    legendmat.fill.labels <- c(legendmat.fill.labels, "Non clinically significant result", paste0("Clinically negative effect (less than ", ifelse(outcome %in% c('OR', 'RR'), exp(est_neg), est_neg), " )"))
+    legendmat.fill.labels <- c(legendmat.fill.labels, "Non clinically significant result", paste0("Clinically negative effect (less than ", ifelse(outcome %in% c('OR', 'RR') & method != "MH", exp(est_neg), est_neg), " )"))
   }
   
   # drop rows that are not included (based on inputs)
@@ -550,24 +590,41 @@ InterpretationThreshold <- function(
   if (draw_plot & length(na.omit(SS)) != 0) {
   
     # empty frame
-    plot <- ggplot(data = data.frame(x = SS, y = seSS), aes(x = x, y = y)) +
+    if (method == "MH") {
+      plot <- ggplot(data = data.frame(x = SS, y = size_current), aes(x = x, y = y)) +
+        scale_y_continuous(expand = c(0, 0))
+    } else {
+      plot <- ggplot(data = data.frame(x = SS, y = seSS), aes(x = x, y = y)) +
+        scale_y_reverse(expand = c(0, 0))
+    }
+    plot <- plot +
       labs(x = xlab, y = ylab) +
       theme_classic() + theme(aspect.ratio = 1, panel.background = element_rect(colour = "black")) +
       scale_x_continuous(expand = c(0, 0)) +
-      scale_y_reverse(expand = c(0, 0)) +
       coord_cartesian(xlim = xlim, ylim = ylim)
+    
     
     # Exponential x axis ticks if outcome is a ratio (and no ticks given)
     if (outcome %in% c('OR', 'RR') & is.null(expxticks)) {
-      plot <- plot +
-        scale_x_continuous(breaks = log(c(0.25, 0.5, 1, 2, 4)), labels = c(0.25, 0.5, 1, 2, 4), expand = c(0,0))
+      if (method == "MH") {
+        plot <- plot +
+          scale_x_continuous(trans = "log", breaks = c(0.25, 0.5, 1, 2, 4), labels = scales::label_number(), expand = c(0,0))
+      } else {
+       plot <- plot +
+        scale_x_continuous(breaks = log(c(0.25, 0.5, 1, 2, 4)), labels = c(0.25, 0.5, 1, 2, 4), expand = c(0,0)) 
+      }
     }
   
     # Specify axis ticks if specified
     # x axis ticks for exponential effects
     if (!is.null(expxticks)) {
-      plot <- plot +
+      if (method == "MH") {
+        plot <- plot +
+          scale_x_continuous(trans = "log", breaks = expxticks, labels = scales::label_number(expxticks), expand = c(0,0))
+      } else {
+        plot <- plot +
         scale_x_continuous(breaks = log(expxticks), labels = expxticks, expand = c(0, 0))
+      }
     }
     # x axis ticks (non exp)
     if (!is.null(xticks)) {
@@ -576,8 +633,13 @@ InterpretationThreshold <- function(
     }
     # y axis ticks
     if (!is.null(yticks)) {
-      plot <- plot +
+      if (method == "MH") {
+        plot <- plot +
+          scale_y_continuous(breaks = yticks, labels = yticks, expand = c(0, 0))
+      } else {
+        plot <- plot +
         scale_y_reverse(breaks = yticks, labels = yticks, expand = c(0, 0))
+      }
     }
   
     # contours
@@ -625,17 +687,27 @@ InterpretationThreshold <- function(
         )
     } else if (!is.na(est_pos) | !is.na(est_neg)) {
       if (!is.na(est_pos)) {
+        poly_df <- data.frame(
+          x = c(c1SS, xlim[2], xlim[2], xlim[1]),
+          y = c(csize, ylim[2], ylim[1], ylim[1])
+        )
+        poly_df$x <- pmax(poly_df$x, xlim[1])
         plot <- plot +
           geom_polygon(
-            data = data.frame(x = c(c1SS, xlim[2], xlim[2]), y = c(csize, ylim[2], ylim[1])),
+            data = poly_df,
             aes(x = x, y = y, fill = "sigmore_col"),
             color = "gray72"
           )
       }
       if (!is.na(est_neg)) {
+        poly_df <- data.frame(
+          x = c(c2SS, xlim[1], xlim[1]),
+          y = c(csize, ylim[2], ylim[1])
+        )
+        poly_df$x <- pmax(poly_df$x, xlim[1])
         plot <- plot +
           geom_polygon(
-            data = data.frame(x = c(c2SS, xlim[1], xlim[1]), y = c(csize, ylim[2], ylim[1])),
+            data = poly_df,
             aes(x = x, y = y, fill = "sigless_col"),
             color = "gray91"
           )
@@ -655,9 +727,14 @@ InterpretationThreshold <- function(
             color = "white"
           )
       } else {
+        poly_df <- data.frame(
+          x = c(c1SS, rev(c2SS)),
+          y = c(csize, rev(csize))
+        )
+        poly_df$x <- pmax(poly_df$x, xlim[1])
         plot <- plot +
           geom_polygon(
-            data = data.frame(x = c(c1SS, rev(c2SS)), y = c(csize, rev(csize))),
+            data = poly_df,
             aes(x = x, y = y, fill = "nosig_col"),
             color = "white"
           )
@@ -673,12 +750,12 @@ InterpretationThreshold <- function(
     # Pooled effect lines
     if (plot_summ_current & length(na.omit(SS)) != 0) {
       plot <- plot +
-        geom_vline(aes(xintercept = current_meta$b, color = "summ_current_col"))
+        geom_vline(aes(xintercept = ifelse(method == "MH", exp(current_meta$b), current_meta$b), color = "summ_current_col"))
     }
     
     if (plot_summ_updated) {
       plot <- plot +
-        geom_vline(aes(xintercept = updated_meta$b, color = "summ_updated_col"))
+        geom_vline(aes(xintercept = ifelse(method == "MH", exp(updated_meta$b), updated_meta$b), color = "summ_updated_col"))
     }
   
     # summary diamonds
@@ -731,12 +808,36 @@ InterpretationThreshold <- function(
   
     # Study points
     if (points) {
-      plot <- plot +
+      if (method == "MH") {
+        plot <- plot +
+          geom_point(data = data.frame(x = SS, y = size_current), 
+                     aes(x = x, y = y, color = "point_col"), shape = 19)
+      } else {
+         plot <- plot +
         geom_point(aes(color = "point_col"), shape = 19)
+      }
     }
     
     if (new_points & length(SSnew) > 1) {
-      # Dashed lines connecting new study to 'average' point
+      if (method == "MH") {
+        # Dashed lines connecting new study to 'average' point
+        lines_df <- data.frame(
+          x = SSnew,
+          xend = rep(new_avg_est, length(SSnew)),
+          y = size_new,
+          yend = rep(new_avg_weight, length(size_new))
+        )
+        plot <- plot +
+          geom_segment(data = lines_df,
+                       aes(x = x, xend = xend, y = y, yend = yend),
+                       linetype = "dashed", color = "black", linewidth = 0.5)
+        # Average point
+        plot <- plot +
+          geom_point(data = data.frame(x = new_avg_est, y = new_avg_weight),
+                     aes(x = x, y = y, color = "new_point_avg_col"), 
+                     shape = 24, fill = "lightblue", size = 3)
+      } else {
+        # Dashed lines connecting new study to 'average' point
       lines_df <- data.frame(
         x = SSnew,
         xend = rep(new_avg_est, length(SSnew)),
@@ -752,13 +853,23 @@ InterpretationThreshold <- function(
         geom_point(data = data.frame(x = new_avg_est, y = new_avg_se),
           aes(x = x, y = y, color = "new_point_avg_col"), 
           shape = 24, fill = "lightblue", size = 3)
+      }
+      
     }
     
     if (new_points) {
-      plot <- plot +
+      if (method == "MH") {
+        plot <- plot +
+          geom_point(data = data.frame(x = SSnew, y = size_new), 
+                     aes(x = x, y = y, color = "new_point_col"), 
+                     shape = 21, fill = "lightblue")
+      } else {
+        plot <- plot +
         geom_point(data = data.frame(x = SSnew, y = seSSnew), 
                    aes(x = x, y = y, color = "new_point_col"), 
                    shape = 21, fill = "lightblue")
+      }
+      
     }
     
     #Tau2 display

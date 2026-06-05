@@ -369,6 +369,18 @@ result$threshold_result
 result$threshold_plot
 ```
 
+### Mantel-Haenszel method
+
+Instead of the inverse-variance method for a common-effects meta-analysis, the e-cigarettes review uses the Mantel-Haenszel estimator due to rare events for some of its outcomes. This method is a one-stage meta-analysis, and so uses the 2x2 table directly, rather than estimating the effect and standard error and pooling those measures. As such, there is no explicitly formula for the weights, but there is an estimated one (documented elsewhere).
+
+As of April 2026, I had already added code to calculate the estimated effect, standard error, and weights when using an MH estimator. However, I had (incorrectly) assumed I could just plug in the estimated weights into the contour calculations as for the common-effects inverse variance. This is incorrect, as the code assumes the weight for each pixel of the space to follow the inverse-variance rule (i.e., that a new study would follow the inverse-variance rule).
+
+It is not possible to estimate the MH-related weight for each possible standard error, as the MH-weight is estimated from the 2x2 table, and a standard error could be calculated from multiple 2x2 data tables.
+
+To get around this, when using the MH-estimator, the plot will instead have the weights plotted rather than the standard error.
+
+However, the MH-estimates weights calculated based on the ratio scale (i.e., doesn't work with the logs of the estimates). Due to laws of logarithms, its impossible to calculate log(RR) in terms of log(estimate) and log(weight), which is what would be ideal to re-write the contour equations. Therefore, contour equations just get applied on the non-log transformed data? Yes! Also, on the weight scale, it has to be the absolute weights rather than percentage as the percentage for already existing studies would vary depending on the weight of the new study(ies).
+
 ## Random-effects {#sec-random-effects}
 
 When working in the random-effects framework things get more complex as $\tau^2 \ne 0$ and is estimated from the studies in the meta-analysis, including the new studies.
