@@ -337,14 +337,16 @@ InterpretationThreshold <- function(
   # random-effects model #
   if (method == "DL")  {
     
-    # calculate tau2 adjustment factor K
-    # Create V, X, Y, and Z
-    size_current_fixed <- 1 / (seSS^2)
-    V <- sum(size_current_fixed^2)
-    X <- sum(size_current_fixed * SS)
-    Y <- sum(size_current_fixed)
-    Z <- sum(size_current_fixed * SS^2)
-    K <- updated_tau2 / ((Z + (new_avg_est^2/new_avg_se^2) - ((X + new_avg_est/new_avg_se^2)^2/(Y + 1/new_avg_se^2)) - (length(SS) + length(SSnew) - 1))/(Y + 1/new_avg_se^2 - ((V + 1/new_avg_se^4)/(Y + 1/new_avg_se^2))))
+    # calculate tau2 adjustment factor K for when there are multiple new studies
+    if (length(SSnew) > 1) {
+      # Create V, X, Y, and Z
+      size_current_fixed <- 1 / (seSS^2)
+      V <- sum(size_current_fixed^2)
+      X <- sum(size_current_fixed * SS)
+      Y <- sum(size_current_fixed)
+      Z <- sum(size_current_fixed * SS^2)
+      K <- updated_tau2 / ((Z + (new_avg_est^2/new_avg_se^2) - ((X + new_avg_est/new_avg_se^2)^2/(Y + 1/new_avg_se^2)) - (length(SS) + length(SSnew) - 1))/(Y + 1/new_avg_se^2 - ((V + 1/new_avg_se^4)/(Y + 1/new_avg_se^2))))
+    }
     
     # optimised grid of all contour points
     contour_tiles <- expand.grid(i = seq_along(cSS), j = seq_along(csize))
@@ -436,14 +438,20 @@ InterpretationThreshold <- function(
   if (summ_current & length(na.omit(SS)) != 0) {
     if (method == "MH") {
       xsumm = exp(c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b))
+      summary_diamond_current <- data.frame(
+        xsumm = xsumm,
+        ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
+                  ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
+      )
     } else {
       xsumm = c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b)
+      summary_diamond_current <- data.frame(
+        xsumm = xsumm,
+        ysumm = c(ylim[2] + 0.10 * axisdiff + summ_pos, ylim[2] + 0.07 * axisdiff + summ_pos, 
+                  ylim[2] + 0.10 * axisdiff + summ_pos, ylim[2] + 0.13 * axisdiff + summ_pos)
+      )
     }
-    summary_diamond_current <- data.frame(
-      xsumm = xsumm,
-      ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
-                ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
-    )
+    
     
     if (pred_interval & length(na.omit(SS)) != 0) {	
       if (method == 'DL') {
@@ -460,14 +468,20 @@ InterpretationThreshold <- function(
    if (summ_updated) {
      if (method == "MH") {
        xsumm = exp(c(updated_meta$ci.lb, updated_meta$b, updated_meta$ci.ub, updated_meta$b))
+       summary_diamond_updated <- data.frame(
+         xsumm = xsumm,
+         ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
+                   ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
+       )
      } else {
        xsumm = c(updated_meta$ci.lb, updated_meta$b, updated_meta$ci.ub, updated_meta$b)
+       summary_diamond_updated <- data.frame(
+         xsumm = xsumm,
+         ysumm = c(ylim[2] + 0.10 * axisdiff + summ_pos, ylim[2] + 0.07 * axisdiff + summ_pos, 
+                   ylim[2] + 0.10 * axisdiff + summ_pos, ylim[2] + 0.13 * axisdiff + summ_pos)
+       )
      }
-     summary_diamond_updated <- data.frame(
-       xsumm = xsumm,
-       ysumm = c(ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.07 * axisdiff + summ_pos, 
-                 ylim[2] - 0.10 * axisdiff + summ_pos, ylim[2] - 0.13 * axisdiff + summ_pos)
-     )
+     
      
      if (pred_interval) {	
        if (method == 'DL') {
@@ -801,9 +815,29 @@ InterpretationThreshold <- function(
   
     # Null vertical line
     if (plot_threshold) {
+      if (!is.na(zero)) {
+        vertical_lines <- zero
+        
+      } else if (!is.na(lower)) {
+        vertical_lines <- lower
+        
+      } else if (!is.na(upper)) {
+        vertical_lines <- upper
+        
+      } else {
+        vertical_lines <- c(est_pos, est_neg)
+        vertical_lines <- vertical_lines[!is.na(vertical_lines)]
+      }
+      print(vertical_lines)
+      print(length(vertical_lines))
+      
       plot <- plot +
-        geom_vline(aes(xintercept = ifelse(!is.na(zero), zero, ifelse(!is.na(lower), lower, ifelse(!is.na(upper), upper, ifelse(!is.na(est_pos) & !is.na(est_neg), c(est_pos, est_neg), ifelse(!is.na(est_pos), est_pos, est_neg))))), 
-                       color = "threshold_col"))
+        geom_vline(
+          data = data.frame(
+            xintercept = vertical_lines
+          ),
+          aes(xintercept = xintercept, 
+              color = "threshold_col"))
     }
   
     # Study points

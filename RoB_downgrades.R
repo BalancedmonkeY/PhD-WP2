@@ -38,8 +38,8 @@ weighted_RoB <- function(
   if (rob_tool == 1 & max(is.na(data[[overall_rob]])) == 1) {
     
     # Read in transformation matrices
-    selection_bias_matrix <- readxl::read_excel("RoB matrices.xlsx", sheet = "selection_bias")
-    overall_bias_matrix <- readxl::read_excel("RoB matrices.xlsx", sheet = "overall bias")
+    selection_bias_matrix <- readxl::read_excel("C:/Users/crn4/OneDrive - University of Leicester/PhD/WP2/3. Create tool/RoB matrices.xlsx", sheet = "selection_bias")
+    overall_bias_matrix <- readxl::read_excel("C:/Users/crn4/OneDrive - University of Leicester/PhD/WP2/3. Create tool/RoB matrices.xlsx", sheet = "overall bias")
     
     # clean risk of bias answers
     selection_bias_matrix <- mutate_all(selection_bias_matrix, .funs = tolower)
