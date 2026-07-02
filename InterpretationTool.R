@@ -44,11 +44,11 @@ library(rmeta)
 #' @param xlab label for the x axis		
 #' @param ylab label for the y axis
 #' @param plot_threshold TRUE/FALSE plot the threshold value vertical line as defined by the argument 'zero', 'lower', or 'upper'	
-#' @param plot_summ_current TRUE/FALSE plot the updated pooled effect vertical line of current studies
-#' @param plot_summ_updated TRUE/FALSE plot the updated pooled effect vertical line of current studies
+#' @param plot_current_line TRUE/FALSE plot the updated pooled effect vertical line of current studies
+#' @param plot_updated_line TRUE/FALSE plot the updated pooled effect vertical line of current studies
 #' @param legendpos position of legend as per ggplot styling	
-#' @param summ_current TRUE/FALSE plot current summary diamond including pooled effect and confidence interval (significance level as defined by sig.level)
-#' @param summ_updated TRUE/FALSE plot updated summary diamond including pooled effect and confidence interval (significance level as defined by sig.level)
+#' @param plot_current_diamond TRUE/FALSE plot current summary diamond including pooled effect and confidence interval (significance level as defined by sig.level)
+#' @param plot_updated_diamond TRUE/FALSE plot updated summary diamond including pooled effect and confidence interval (significance level as defined by sig.level)
 #' @param summ_pos adjustment of position of summary diamond
 #' @param new_points TRUE/FALSE add points of new study(ies) to plot
 #' @param points - TRUE/FALSE whether the study points should be displayed at all (TRUE default)
@@ -92,11 +92,11 @@ InterpretationThreshold <- function(
     xlab = paste0 ("Effect (", outcome, ")"),
     ylab = ifelse(method == "MH", "Weight", "Standard Error"),
     plot_threshold = TRUE,
-    plot_summ_current = TRUE,
-    plot_summ_updated = TRUE,
+    plot_current_line = TRUE,
+    plot_updated_line = TRUE,
     legendpos = NULL,
-    summ_current = TRUE,
-    summ_updated = TRUE,
+    plot_current_diamond = TRUE,
+    plot_updated_diamond = TRUE,
     summ_pos = 0,
     new_points = TRUE,
     points = TRUE,
@@ -435,7 +435,7 @@ InterpretationThreshold <- function(
    
    if (length(na.omit(SS)) != 0) {
   
-  if (summ_current & length(na.omit(SS)) != 0) {
+  if (plot_current_diamond & length(na.omit(SS)) != 0) {
     if (method == "MH") {
       xsumm = exp(c(current_meta$ci.lb, current_meta$b, current_meta$ci.ub, current_meta$b))
       summary_diamond_current <- data.frame(
@@ -465,7 +465,7 @@ InterpretationThreshold <- function(
     }
   }
    
-   if (summ_updated) {
+   if (plot_updated_diamond) {
      if (method == "MH") {
        xsumm = exp(c(updated_meta$ci.lb, updated_meta$b, updated_meta$ci.ub, updated_meta$b))
        summary_diamond_updated <- data.frame(
@@ -540,15 +540,15 @@ InterpretationThreshold <- function(
     legendmat.col$color[4] <- "black"
   }
   
-  if (plot_summ_current) {
-    legendmat.col.values <- c(legendmat.col.values, "summ_current_col" = "slategrey")
+  if (plot_current_line) {
+    legendmat.col.values <- c(legendmat.col.values, "plot_current_diamond_col" = "mediumpurple4")
     legendmat.col$labels[5] <- "Current Pooled Effect"
     legendmat.col$linetype[5] <- "solid"
-    legendmat.col$color[5] <- "slategrey"
+    legendmat.col$color[5] <- "mediumpurple4"
   }
   
-  if (plot_summ_updated) {
-    legendmat.col.values <- c(legendmat.col.values, "summ_updated_col" = "cadetblue4")
+  if (plot_updated_line) {
+    legendmat.col.values <- c(legendmat.col.values, "plot_updated_diamond_col" = "cadetblue4")
     legendmat.col$labels[6] <- "Updated Pooled Effect"
     legendmat.col$linetype[6] <- "solid"
     legendmat.col$color[6] <- "cadetblue4"
@@ -561,12 +561,12 @@ InterpretationThreshold <- function(
     legendmat.col$color[7] <- "lightgray"
   }
   
-  if (summ_current) {
-    legendmat.fill.values <- c(legendmat.fill.values, "diamond_fill_current" = "lavenderblush4")
+  if (plot_current_diamond) {
+    legendmat.fill.values <- c(legendmat.fill.values, "diamond_fill_current" = "plum4")
     legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Current Pooled Result (diamond - ", round((1-sig_level)*100, 1), "% CI)"))
   }
   
-  if (summ_updated) {
+  if (plot_updated_diamond) {
     legendmat.fill.values <- c(legendmat.fill.values, "diamond_fill_updated" = "cornflowerblue")
     legendmat.fill.labels <- c(legendmat.fill.labels, paste0("Updated Pooled Result (diamond - ", round((1-sig_level)*100, 1), "% CI)"))
   }
@@ -762,18 +762,18 @@ InterpretationThreshold <- function(
     }
   
     # Pooled effect lines
-    if (plot_summ_current & length(na.omit(SS)) != 0) {
+    if (plot_current_line & length(na.omit(SS)) != 0) {
       plot <- plot +
-        geom_vline(aes(xintercept = ifelse(method == "MH", exp(current_meta$b), current_meta$b), color = "summ_current_col"))
+        geom_vline(aes(xintercept = ifelse(method == "MH", exp(current_meta$b), current_meta$b), color = "plot_current_diamond_col"))
     }
     
-    if (plot_summ_updated) {
+    if (plot_updated_line) {
       plot <- plot +
-        geom_vline(aes(xintercept = ifelse(method == "MH", exp(updated_meta$b), updated_meta$b), color = "summ_updated_col"))
+        geom_vline(aes(xintercept = ifelse(method == "MH", exp(updated_meta$b), updated_meta$b), color = "plot_updated_diamond_col"))
     }
   
     # summary diamonds
-    if (summ_current) {
+    if (plot_current_diamond) {
       if (pred_interval) {
         plot <- plot +
           geom_segment(
@@ -784,7 +784,7 @@ InterpretationThreshold <- function(
               yend = ylim[2] - 0.10 * axisdiff + summ_pos,
               color = "pred_col"
             ),
-            show_legend = ifelse(plot_summ_current | plot_zero, FALSE, TRUE)
+            show_legend = ifelse(plot_current_line | plot_zero, FALSE, TRUE)
           )   # needed to avoid crosshairs in legend for when there are vlines also present
       }
       plot <- plot +
@@ -793,7 +793,7 @@ InterpretationThreshold <- function(
                      color = "black", alpha = 0.8)
     }
     
-    if (summ_updated) {
+    if (plot_updated_diamond) {
       if (pred_interval) {
         plot <- plot +
           geom_segment(
@@ -804,13 +804,13 @@ InterpretationThreshold <- function(
               yend = ylim[2] - 0.10 * axisdiff + summ_pos,
               color = "pred_col"
             ),
-            show_legend = ifelse(plot_summ_updated | plot_zero, FALSE, TRUE)
+            show_legend = ifelse(plot_updated_line | plot_zero, FALSE, TRUE)
           )   # needed to avoid crosshairs in legend for when there are vlines also present
       }
       plot <- plot +
         geom_polygon(data = summary_diamond_updated, 
                      aes(x = xsumm, y = ysumm, fill = "diamond_fill_updated"), 
-                     color = "black", alpha = ifelse(summ_current, 0.4, 0.8))
+                     color = "black", alpha = ifelse(plot_current_diamond, 0.4, 0.8))
     }
   
     # Null vertical line

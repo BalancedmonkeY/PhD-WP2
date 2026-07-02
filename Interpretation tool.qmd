@@ -74,7 +74,7 @@ In the example below (@fig-base-example), one can see:
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'EE', outcome = 'RR', zero = 1, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+  method = 'EE', outcome = 'RR', zero = 1, plot_updated_line = FALSE, plot_updated_diamond = FALSE, new_points = FALSE)
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
@@ -108,7 +108,7 @@ Example where we only specify a positive clinical effect of estimates larger tha
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'EE', outcome = 'RR', est_pos = 1.05, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+  method = 'EE', outcome = 'RR', est_pos = 1.05, plot_updated_line = FALSE, plot_updated_diamond = FALSE, new_points = FALSE)
 ```
 
 ### Clinical significance
@@ -130,12 +130,26 @@ The user specifies this setting by specifying `upper = 0.9` as the threshold is 
 ```{r, echo = FALSE, include = FALSE}
 result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
   SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
-  method = 'fixed', outcome = 'RR', upper = 0.9, plot_summ_updated = FALSE, summ_updated = FALSE, new_points = FALSE)
+  method = 'EE', outcome = 'RR', upper = 0.9, plot_updated_line = FALSE, plot_updated_diamond = FALSE, new_points = FALSE)
 ```
 
 ```{r, echo = FALSE, fig.width = 10}
 #| label: fig-clinical-example
 #| fig-cap: "Extension to Langan plot by considering clinical significance"
+result$threshold_plot
+```
+
+Then added option to consider both directions of the effect regarding clinical significance (jumping to having one new study as well so that can test whether contours are behaving correctly). Turns out code is fine, need to note that this option is for when the focus is just on the point estimate, and not the confidence interval. So the extended funnel plot in this case would probably not need the summary diamonds, but just the lines.
+
+```{r, echo = FALSE, include = FALSE}
+result <- InterpretationThreshold(SS = MAdata_bin$yi, seSS = MAdata_bin$sei,
+  SSnew = MAdata_bin_new$yi, seSSnew = MAdata_bin_new$sei,
+  method = 'EE', outcome = 'RR', est_neg = 0.9, est_pos = 1.1, plot_current_diamond = FALSE, plot_updated_diamond = FALSE)
+```
+
+```{r, echo = FALSE, fig.width = 10}
+#| label: fig-clinical-example
+#| fig-cap: "Extension to Langan plot by considering clinical significance in both directions"
 result$threshold_plot
 ```
 
